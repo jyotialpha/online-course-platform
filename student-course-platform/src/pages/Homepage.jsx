@@ -1,8 +1,8 @@
-import { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, BookOpen, Zap, Clock, Play, Users, Award, TrendingUp, ArrowRight, Rocket, Target, Sparkles } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 // Mock data for courses
 const mockCourses = [
@@ -190,7 +190,8 @@ const AnimatedBackground = () => (
 
 // Course Card Component
 const CourseCard = ({ course, delay }) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
   const getLevelColor = (level) => {
@@ -386,7 +387,7 @@ const StatsSection = () => (
 );
 
 function Homepage() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
 

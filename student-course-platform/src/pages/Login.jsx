@@ -1,10 +1,11 @@
-import { useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, ArrowLeft, User, Shield, Mail, Sparkles, Zap, Eye, EyeOff } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import AdminLoginForm from '../components/auth/AdminLoginForm';
+import StudentLoginForm from '../components/auth/StudentLoginForm';
 
 // Enhanced animation variants
 const containerVariants = {
@@ -225,7 +226,7 @@ const EnhancedButton = ({ children, onClick, variant = "primary", className = ""
 };
 
 function Login() {
-  const { user, login } = useContext(AuthContext);
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('student');

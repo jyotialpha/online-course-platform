@@ -1,11 +1,12 @@
-import { useContext, useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { Home, BookOpen, Users, Settings, LogOut } from 'lucide-react';
 
-function Sidebar() {
-  const { user, logout } = useContext(AuthContext);
+const Sidebar = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = React.useState(true);
 
   const handleLogout = () => {
     logout();

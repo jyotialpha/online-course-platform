@@ -1,13 +1,12 @@
-import { useContext } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Routes, Route } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
 import PurchasedCourseCard from '../components/student/PurchasedCourseCard';
 import PDFViewer from '../components/student/PDFViewer';
 import MockTestInterface from '../components/student/MockTestInterface';
 import { mockCourses } from '../mockData/courses';
 
 function StudentDashboard() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
   // Mock purchased courses (subset of mockCourses)
   const purchasedCourses = user.isAuthenticated
@@ -47,7 +46,7 @@ function StudentDashboard() {
 }
 
 function MyCourses() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const purchasedCourses = user.isAuthenticated
     ? mockCourses.filter((course) => user.purchasedCourses.includes(course.id))
     : [];
