@@ -93,13 +93,17 @@ router.post('/admin/login', loginLimiter, async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000
+    // Return token in response body instead of cookie
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role
+      }
     });
-    res.json({ message: 'Admin login successful', role: user.role });
   } catch (error) {
+    console.error('Admin login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -123,8 +127,6 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
 
 // Logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('jwt');
-  req.session.destroy();
   res.json({ message: 'Logout successful' });
 });
 
