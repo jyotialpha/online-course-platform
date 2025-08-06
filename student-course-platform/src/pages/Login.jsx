@@ -5,7 +5,7 @@ import { LogIn, ArrowLeft, User, Shield, Mail, Sparkles, Zap, Eye, EyeOff } from
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import AdminLoginForm from '../components/auth/AdminLoginForm';
-import StudentLoginForm from '../components/auth/StudentLoginForm';
+
 
 // Enhanced animation variants
 const containerVariants = {
@@ -413,44 +413,6 @@ function Login() {
                         className="space-y-6"
                       >
                         <GoogleLoginButton />
-                        <StudentLoginForm />
-
-                        {/* Animated divider */}
-                        <div className="relative py-4">
-                          <div className="absolute inset-0 flex items-center">
-                            <motion.div 
-                              className="w-full border-t border-gradient-to-r from-transparent via-white/20 to-transparent"
-                              initial={{ scaleX: 0 }}
-                              animate={{ scaleX: 1 }}
-                              transition={{ duration: 0.8, delay: 0.2 }}
-                            />
-                          </div>
-                          <div className="relative flex justify-center">
-                            <span className="px-6 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm text-gray-300 text-sm font-medium rounded-full border border-white/10">
-                              or dive in with demo
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Enhanced demo button */}
-                        <EnhancedButton
-                          onClick={handleMockStudentLogin}
-                          variant="demo"
-                        >
-                          <Zap className="w-5 h-5" />
-                          Launch Demo Experience
-                          <motion.div
-                            className="w-2 h-2 bg-white rounded-full"
-                            animate={{
-                              scale: [1, 1.5, 1],
-                              opacity: [1, 0.5, 1],
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                            }}
-                          />
-                        </EnhancedButton>
                       </motion.div>
                     ) : (
                       <motion.div
