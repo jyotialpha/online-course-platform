@@ -412,13 +412,8 @@ function Login() {
                         transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                         className="space-y-6"
                       >
-                        {/* Enhanced Google Login */}
-                        <motion.div
-                          whileHover={{ scale: 1.02, y: -2 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <GoogleLoginButton />
-                        </motion.div>
+                        <GoogleLoginButton />
+                        <StudentLoginForm />
 
                         {/* Animated divider */}
                         <div className="relative py-4">

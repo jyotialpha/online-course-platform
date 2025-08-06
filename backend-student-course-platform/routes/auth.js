@@ -67,6 +67,51 @@ router.post('/admin/login', loginLimiter, async (req, res) => {
   }
 });
 
+// Google Sign-In for Students
+router.post('/google-signin', async (req, res) => {
+  try {
+    const { googleId, name, photoUrl, email } = req.body;
+    
+    // Check if user exists
+    let user = await User.findOne({ googleId });
+    
+    if (!user) {
+      // Create new user
+      user = new User({
+        googleId,
+        googleProfile: {
+          name,
+          photoUrl,
+          email
+        },
+        role: 'student'
+      });
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.googleProfile.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.googleProfile.name,
+        photoUrl: user.googleProfile.photoUrl,
+        email: user.googleProfile.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Logout
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logout successful' });

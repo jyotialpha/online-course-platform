@@ -5,6 +5,11 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, sparse: true }, // For student (Google OAuth)
   password: { type: String }, // For admin
   googleId: { type: String }, // For student
+  googleProfile: {
+    name: { type: String },
+    photoUrl: { type: String },
+    email: { type: String }
+  },
   role: { type: String, enum: ['student', 'admin'], default: 'student' },
   createdAt: { type: Date, default: Date.now }
 });

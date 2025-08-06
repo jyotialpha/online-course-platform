@@ -12,14 +12,43 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      const username = localStorage.getItem('username') || '';
-      setUser({ isAuthenticated: true, role: 'admin', username });
+      // Get user data from localStorage
+      const userData = JSON.parse(localStorage.getItem('user')) || {};
+      setUser({
+        isAuthenticated: true,
+        role: userData.role || 'guest',
+        name: userData.name || userData.username || '',
+        email: userData.email || '',
+        username: userData.username || '',
+        googleProfile: userData.googleProfile || {
+          name: userData.name || '',
+          photoUrl: userData.photoUrl || '',
+          email: userData.email || ''
+        }
+      });
     }
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('username', userData.username);
+  const login = (token, userData) => {
+    // Store token
+    localStorage.setItem('token', token);
+    
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Store user data in state
+    setUser({
+      isAuthenticated: true,
+      role: userData.role,
+      name: userData.name || userData.username || '',
+      email: userData.email || '',
+      username: userData.username || '',
+      googleProfile: userData.googleProfile || {
+        name: userData.name || '',
+        photoUrl: userData.photoUrl || '',
+        email: userData.email || ''
+      }
+    });
   };
 
   const logout = () => {

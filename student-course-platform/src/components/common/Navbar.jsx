@@ -65,7 +65,7 @@ function Navbar() {
         <div className="hidden md:flex space-x-6 items-center">
           {[
             { to: '/', label: 'Home', icon: Home },
-            ...(user.isAuthenticated && user.role === 'student' ? [{ to: '/student/dashboard', label: 'Dashboard', icon: BookOpen }] : []),
+            ...(user.isAuthenticated && user.role === 'student' ? [{ to: '/StudentDashboard', label: 'Dashboard', icon: BookOpen }] : []),
             ...(user.isAuthenticated && user.role === 'admin' ? [{ to: '/admin/dashboard', label: 'Admin Dashboard', icon: Zap }] : []),
             ...(user.isAuthenticated ? [] : [{ to: '/login', label: 'Login', icon: Zap }]),
           ].map((link, index) => (
@@ -97,28 +97,47 @@ function Navbar() {
             </motion.div>
           ))}
           {user.isAuthenticated && (
-            <motion.button
+            <motion.div
               custom={4}
               initial="hidden"
               animate="visible"
               variants={linkVariants}
-              onClick={handleLogout}
-              className="group relative text-white font-semibold px-4 py-2 rounded-2xl hover:bg-white/10 transition-all duration-300"
+              className="flex items-center gap-4"
             >
-              <motion.span
-                className="flex items-center gap-2"
-                whileHover={{ x: 5 }}
-                transition={{ duration: 0.3 }}
+              {/* User Profile Image */}
+              {user.googleProfile?.photoUrl && (
+                <img
+                  src={user.googleProfile.photoUrl}
+                  alt={user.googleProfile.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              )}
+              
+              {/* User Name */}
+              <span className="text-white font-medium">
+                {user.googleProfile?.name}
+              </span>
+              
+              {/* Logout Button */}
+              <motion.button
+                onClick={handleLogout}
+                className="group relative text-white font-semibold px-4 py-2 rounded-2xl hover:bg-white/10 transition-all duration-300"
               >
-                <LogOut className="w-5 h-5 group-hover:text-purple-400" />
-                Logout
-              </motion.span>
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-cyan-400/20 rounded-2xl opacity-0"
-                whileHover={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-            </motion.button>
+                <motion.span
+                  className="flex items-center gap-2"
+                  whileHover={{ x: 5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LogOut className="w-5 h-5 group-hover:text-purple-400" />
+                  Logout
+                </motion.span>
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-cyan-400/20 rounded-2xl opacity-0"
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.button>
+            </motion.div>
           )}
         </div>
       </div>

@@ -23,11 +23,8 @@ export default function AdminLoginForm() {
       // Store token in localStorage
       localStorage.setItem('token', response.data.token);
       
-      // Update auth context
-      login({
-        ...response.data.user,
-        isAuthenticated: true
-      });
+      // Update auth context with token and user data
+      login(response.data.token, response.data.user);
       
       // Redirect to admin dashboard
       navigate('/admin/dashboard');

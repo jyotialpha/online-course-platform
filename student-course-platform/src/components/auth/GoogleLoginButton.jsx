@@ -1,13 +1,94 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
 function GoogleLoginButton() {
-  const handleGoogleLogin = () => {
-    // Placeholder for Google OAuth (to be integrated with backend)
-    alert('Google Login clicked (mock implementation)');
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleScriptLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    if (!googleScriptLoaded) return;
+
+    // Initialize Google Identity Services
+    if (window.google?.accounts?.oauth2) {
+      // Request OAuth token
+      const response = await window.google.accounts.oauth2.initTokenClient({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        callback: async (tokenResponse) => {
+          if (tokenResponse.access_token) {
+            try {
+              // Get user profile
+              const profileResponse = await fetch(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                {
+                  headers: {
+                    Authorization: `Bearer ${tokenResponse.access_token}`,
+                  },
+                }
+              );
+              const profile = await profileResponse.json();
+
+              // Send to backend
+              const backendResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google-signin`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  googleId: profile.sub,
+                  name: profile.name,
+                  photoUrl: profile.picture,
+                  email: profile.email,
+                }),
+              });
+
+              const data = await backendResponse.json();
+              
+              // Handle response
+              if (data.token && data.user) {
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Login with token and user data
+                login(data.token, data.user);
+                
+                // Redirect to student dashboard
+                navigate('/StudentDashboard');
+              } else {
+                console.error('Login failed:', data.message);
+              }
+            } catch (error) {
+              console.error('Error during Google login:', error);
+            }
+          }
+        },
+      });
+
+      // Request authorization
+      response.requestAccessToken();
+    }
   };
 
   return (
     <button
       onClick={handleGoogleLogin}
-      className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center justify-center"
+      className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center justify-center transition-all duration-300"
+      disabled={!googleScriptLoaded}
     >
       <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24">
         <path

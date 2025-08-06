@@ -17,7 +17,7 @@ function StudentDashboard() {
     <div className="container mx-auto p-4">
       <Routes>
         <Route
-          path="/"
+          path=""
           element={
             <>
               <h2 className="text-3xl font-bold mb-6 text-center">My Courses</h2>
@@ -37,9 +37,9 @@ function StudentDashboard() {
             </>
           }
         />
-        <Route path="/courses" element={<MyCourses />} />
-        <Route path="/pdfs" element={<PDFViewer />} />
-        <Route path="/tests" element={<MockTestInterface />} />
+        <Route path="courses" element={<MyCourses />} />
+        <Route path="pdfs" element={<PDFViewer />} />
+        <Route path="tests" element={<MockTestInterface />} />
       </Routes>
     </div>
   );
