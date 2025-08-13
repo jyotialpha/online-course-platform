@@ -62,10 +62,18 @@ function GoogleLoginButton() {
               // Handle response
               if (data.token && data.user) {
                 // Store user data in localStorage
-                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('user', JSON.stringify({
+                  ...data.user,
+                  role: 'student',
+                  purchasedCourses: []
+                }));
                 
                 // Login with token and user data
-                login(data.token, data.user);
+                login(data.token, {
+                  ...data.user,
+                  role: 'student',
+                  purchasedCourses: []
+                });
                 
                 // Redirect to student dashboard
                 navigate('/student/dashboard');

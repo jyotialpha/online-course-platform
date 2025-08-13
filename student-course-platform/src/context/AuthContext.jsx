@@ -14,18 +14,24 @@ export function AuthProvider({ children }) {
     if (token) {
       // Get user data from localStorage
       const userData = JSON.parse(localStorage.getItem('user')) || {};
-      setUser({
+      // Ensure all required fields exist
+      const userState = {
         isAuthenticated: true,
         role: userData.role || 'guest',
-        name: userData.name || userData.username || '',
-        email: userData.email || '',
-        username: userData.username || '',
-        googleProfile: userData.googleProfile || {
-          name: userData.name || '',
-          photoUrl: userData.photoUrl || '',
-          email: userData.email || ''
-        }
-      });
+        name: userData.name || userData.googleProfile?.name || '',
+        email: userData.email || userData.googleProfile?.email || '',
+        username: userData.username || userData.googleProfile?.name || '',
+        googleProfile: {
+          name: userData.googleProfile?.name || userData.name || '',
+          photoUrl: userData.googleProfile?.photoUrl || '',
+          email: userData.googleProfile?.email || userData.email || ''
+        },
+        purchasedCourses: userData.purchasedCourses || []
+      };
+      setUser(userState);
+    } else {
+      // Clear any stale user data
+      localStorage.removeItem('user');
     }
   }, []);
 
@@ -52,9 +58,17 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    setUser({ isAuthenticated: false, role: 'guest', username: '' });
+    setUser({
+      isAuthenticated: false,
+      role: 'guest',
+      name: '',
+      email: '',
+      username: '',
+      googleProfile: null,
+      purchasedCourses: []
+    });
     localStorage.removeItem('token');
-    localStorage.removeItem('username');
+    localStorage.removeItem('user');
   };
 
   return (

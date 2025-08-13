@@ -236,6 +236,15 @@ function Login() {
     setIsLoaded(true);
     console.log('Login: User', user);
 
+    // Handle redirect if user is authenticated
+    if (user.isAuthenticated) {
+      const dashboardPath = user.role === 'student' 
+        ? '/student/dashboard' 
+        : '/admin/dashboard';
+      
+      navigate(dashboardPath, { replace: true });
+    }
+
     // Mouse tracking for interactive effects
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -243,7 +252,7 @@ function Login() {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [user]);
+  }, [user, navigate]);
 
   const handleMockStudentLogin = () => {
     login({
@@ -338,33 +347,10 @@ function Login() {
           <GlassmorphismCard className="p-8">
             <AnimatePresence mode="wait">
               {user.isAuthenticated ? (
-                <motion.div
-                  className="text-center"
-                  initial={{ opacity: 0, scale: 0.8, rotateY: 90 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, rotateY: -90 }}
-                  transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                  <motion.div 
-                    className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6"
-                    animate={{ 
-                      boxShadow: [
-                        '0 0 20px rgba(16, 185, 129, 0.5)',
-                        '0 0 40px rgba(16, 185, 129, 0.8)',
-                        '0 0 20px rgba(16, 185, 129, 0.5)',
-                      ]
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <User className="w-10 h-10 text-white" />
-                  </motion.div>
-                  <h3 className="text-2xl font-bold text-white mb-3">You're In!</h3>
-                  <p className="text-gray-300 mb-8">Ready to continue your learning journey?</p>
-                  <EnhancedButton variant="primary">
-                    <Zap className="w-5 h-5" />
-                    Launch Dashboard
-                  </EnhancedButton>
-                </motion.div>
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-white mb-3">Welcome Back!</h3>
+                  <p className="text-gray-300 mb-8">Redirecting to your dashboard...</p>
+                </div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
