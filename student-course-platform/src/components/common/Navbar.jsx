@@ -65,7 +65,7 @@ function Navbar() {
         <div className="hidden md:flex space-x-6 items-center">
           {[
             { to: '/', label: 'Home', icon: Home },
-            ...(user.isAuthenticated && user.role === 'student' ? [{ to: '/StudentDashboard', label: 'Dashboard', icon: BookOpen }] : []),
+            ...(user.isAuthenticated && user.role === 'student' ? [{ to: '/student/dashboard', label: 'Dashboard', icon: BookOpen }] : []),
             ...(user.isAuthenticated && user.role === 'admin' ? [{ to: '/admin/dashboard', label: 'Admin Dashboard', icon: Zap }] : []),
             ...(user.isAuthenticated ? [] : [{ to: '/login', label: 'Login', icon: Zap }]),
           ].map((link, index) => (

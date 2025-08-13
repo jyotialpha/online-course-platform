@@ -68,7 +68,7 @@ function GoogleLoginButton() {
                 login(data.token, data.user);
                 
                 // Redirect to student dashboard
-                navigate('/StudentDashboard');
+                navigate('/student/dashboard');
               } else {
                 console.error('Login failed:', data.message);
               }
