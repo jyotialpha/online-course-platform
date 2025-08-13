@@ -15,13 +15,13 @@ function AppContent() {
   const location = useLocation();
 
   // Debug logs to check state
-  console.log('User:', user);
-  console.log('Location:', location.pathname);
+  // console.log('User:', user);
+  // console.log('Location:', location.pathname);
   
   // Show sidebar only for authenticated users on /student/* or /admin/* routes
   const showSidebar = user.isAuthenticated && 
     (location.pathname.startsWith('/student/') || location.pathname.startsWith('/admin/'));
-  console.log('Show Sidebar:', showSidebar);
+  // console.log('Show Sidebar:', showSidebar);
 
   return (
     <div className="min-h-screen bg-gray-100 flex">

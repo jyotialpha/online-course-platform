@@ -234,7 +234,7 @@ function Login() {
 
   useEffect(() => {
     setIsLoaded(true);
-    console.log('Login: User', user);
+    // console.log('Login: User', user);
 
     // Handle redirect if user is authenticated
     if (user.isAuthenticated) {

@@ -393,8 +393,8 @@ function Homepage() {
 
   useEffect(() => {
     setIsLoaded(true);
-    console.log('Homepage: User', user);
-    console.log('Homepage: Courses', mockCourses);
+    // console.log('Homepage: User', user);
+    // console.log('Homepage: Courses', mockCourses);
   }, [user]);
 
   const filteredCourses = mockCourses.filter(
