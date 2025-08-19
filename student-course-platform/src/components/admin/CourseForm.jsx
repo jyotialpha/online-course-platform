@@ -25,6 +25,7 @@ function CourseForm() {
     ]
   });
   const [expandedChapter, setExpandedChapter] = useState(0);
+  const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 }); // Track expanded question per chapter
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -90,6 +91,7 @@ function CourseForm() {
 
   const addQuestion = (chapterIndex) => {
     const updatedChapters = [...formData.chapters];
+    const newQuestionIndex = updatedChapters[chapterIndex].questions.length;
     updatedChapters[chapterIndex].questions.push({
       question: '',
       options: ['', '', '', ''],
@@ -97,6 +99,11 @@ function CourseForm() {
       explanation: ''
     });
     setFormData({ ...formData, chapters: updatedChapters });
+    // Expand the newly added question
+    setExpandedQuestions({
+      ...expandedQuestions,
+      [chapterIndex]: newQuestionIndex
+    });
   };
 
   const removeQuestion = (chapterIndex, questionIndex) => {
@@ -105,6 +112,20 @@ function CourseForm() {
       (_, i) => i !== questionIndex
     );
     setFormData({ ...formData, chapters: updatedChapters });
+    
+    // Reset expanded question if the current one was deleted
+    if (expandedQuestions[chapterIndex] === questionIndex) {
+      const newExpanded = { ...expandedQuestions };
+      delete newExpanded[chapterIndex];
+      setExpandedQuestions(newExpanded);
+    }
+  };
+  
+  const toggleQuestion = (chapterIndex, questionIndex) => {
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [chapterIndex]: prev[chapterIndex] === questionIndex ? -1 : questionIndex
+    }));
   };
 
   const handleFileUpload = (chapterIndex, file) => {
@@ -283,68 +304,86 @@ function CourseForm() {
                     </div>
 
                     {chapter.questions.map((question, questionIndex) => (
-                      <div key={questionIndex} className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium text-gray-700">
-                            Question {questionIndex + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeQuestion(chapterIndex, questionIndex)}
-                            className="text-red-500 hover:text-red-700"
-                            title="Remove question"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      <div key={questionIndex} className="bg-gray-50 rounded-md border border-gray-200 overflow-hidden mb-3">
+                        <div 
+                          className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100"
+                          onClick={() => toggleQuestion(chapterIndex, questionIndex)}
+                        >
+                          <div className="flex items-center">
+                            <span className="font-medium text-gray-700">
+                              Question {questionIndex + 1}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {expandedQuestions[chapterIndex] === questionIndex ? (
+                              <ChevronUp className="h-5 w-5 text-gray-500" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeQuestion(chapterIndex, questionIndex);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                              title="Remove question"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          <div>
-                            <input
-                              type="text"
-                              value={question.question}
-                              onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'question', e.target.value)}
-                              className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Enter question text"
-                              required
-                            />
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {question.options.map((option, optionIndex) => (
-                              <div key={optionIndex} className="flex items-center">
-                                <span className="mr-2 text-sm font-medium text-gray-700 w-5">
-                                  {String.fromCharCode(65 + optionIndex)}.
-                                </span>
-                                <input
-                                  type="text"
-                                  value={option}
-                                  onChange={(e) => handleOptionChange(chapterIndex, questionIndex, optionIndex, e.target.value)}
-                                  className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                                  required
-                                />
-                                <input
-                                  type="radio"
-                                  name={`correct-${chapterIndex}-${questionIndex}`}
-                                  checked={question.correctAnswer === optionIndex}
-                                  onChange={() => handleQuestionChange(chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
-                                  className="ml-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="ml-1 text-xs text-gray-500">Correct</span>
-                              </div>
-                            ))}
-                          </div>
+                        
+                        {expandedQuestions[chapterIndex] === questionIndex && (
+                          <div className="p-4 pt-0 space-y-3">
+                            <div>
+                              <input
+                                type="text"
+                                value={question.question}
+                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'question', e.target.value)}
+                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Enter question text"
+                                required
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {question.options.map((option, optionIndex) => (
+                                <div key={optionIndex} className="flex items-center">
+                                  <span className="mr-2 text-sm font-medium text-gray-700 w-5">
+                                    {String.fromCharCode(65 + optionIndex)}.
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => handleOptionChange(chapterIndex, questionIndex, optionIndex, e.target.value)}
+                                    className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                    required
+                                  />
+                                  <input
+                                    type="radio"
+                                    name={`correct-${chapterIndex}-${questionIndex}`}
+                                    checked={question.correctAnswer === optionIndex}
+                                    onChange={() => handleQuestionChange(chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
+                                    className="ml-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="ml-1 text-xs text-gray-500">Correct</span>
+                                </div>
+                              ))}
+                            </div>
 
-                          <div>
-                            <textarea
-                              value={question.explanation}
-                              onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'explanation', e.target.value)}
-                              className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              rows="2"
-                              placeholder="Explanation for the correct answer"
-                            />
+                            <div>
+                              <textarea
+                                value={question.explanation}
+                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'explanation', e.target.value)}
+                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows="2"
+                                placeholder="Explanation for the correct answer"
+                              />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
