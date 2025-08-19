@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  FileText, 
+  ChevronDown, 
+  ChevronUp, 
+  BookOpen, 
+  Image as ImageIcon,
+  DollarSign,
+  File,
+  PlusCircle,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 
 function CourseForm() {
   const [formData, setFormData] = useState({
@@ -25,44 +38,64 @@ function CourseForm() {
     ]
   });
   const [expandedChapter, setExpandedChapter] = useState(0);
-  const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 }); // Track expanded question per chapter
+  const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock course creation
-    console.log('Course created:', formData);
-    alert('Course created (mock implementation)');
-    navigate('/admin/dashboard');
+    setIsSubmitting(true);
+    try {
+      // TODO: Replace with actual API call
+      console.log('Submitting course:', formData);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      alert('Course created successfully!');
+      navigate('/admin/dashboard');
+    } catch (error) {
+      console.error('Error creating course:', error);
+      alert('Failed to create course. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const handleChapterChange = (chapterIndex, field, value) => {
-    const updatedChapters = [...formData.chapters];
-    updatedChapters[chapterIndex][field] = value;
-    setFormData({ ...formData, chapters: updatedChapters });
+    setFormData(prev => {
+      const updatedChapters = [...prev.chapters];
+      updatedChapters[chapterIndex][field] = value;
+      return { ...prev, chapters: updatedChapters };
+    });
   };
 
   const handleQuestionChange = (chapterIndex, questionIndex, field, value) => {
-    const updatedChapters = [...formData.chapters];
-    updatedChapters[chapterIndex].questions[questionIndex][field] = value;
-    setFormData({ ...formData, chapters: updatedChapters });
+    setFormData(prev => {
+      const updatedChapters = [...prev.chapters];
+      updatedChapters[chapterIndex].questions[questionIndex][field] = value;
+      return { ...prev, chapters: updatedChapters };
+    });
   };
 
   const handleOptionChange = (chapterIndex, questionIndex, optionIndex, value) => {
-    const updatedChapters = [...formData.chapters];
-    updatedChapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
-    setFormData({ ...formData, chapters: updatedChapters });
+    setFormData(prev => {
+      const updatedChapters = [...prev.chapters];
+      updatedChapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
+      return { ...prev, chapters: updatedChapters };
+    });
   };
 
   const addChapter = () => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       chapters: [
-        ...formData.chapters,
+        ...prev.chapters,
         {
           title: '',
           description: '',
@@ -77,50 +110,55 @@ function CourseForm() {
           ]
         }
       ]
-    });
-    setExpandedChapter(formData.chapters.length);
+    }));
+    setExpandedChapter(prev => prev + 1);
   };
 
   const removeChapter = (index) => {
-    const updatedChapters = formData.chapters.filter((_, i) => i !== index);
-    setFormData({ ...formData, chapters: updatedChapters });
-    if (expandedChapter >= updatedChapters.length) {
-      setExpandedChapter(updatedChapters.length - 1);
+    if (window.confirm('Are you sure you want to remove this chapter and all its questions?')) {
+      setFormData(prev => ({
+        ...prev,
+        chapters: prev.chapters.filter((_, i) => i !== index)
+      }));
+      setExpandedChapter(prev => (prev === index ? Math.max(0, index - 1) : prev));
     }
   };
 
   const addQuestion = (chapterIndex) => {
-    const updatedChapters = [...formData.chapters];
-    const newQuestionIndex = updatedChapters[chapterIndex].questions.length;
-    updatedChapters[chapterIndex].questions.push({
-      question: '',
-      options: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: ''
+    setFormData(prev => {
+      const updatedChapters = [...prev.chapters];
+      updatedChapters[chapterIndex].questions.push({
+        question: '',
+        options: ['', '', '', ''],
+        correctAnswer: 0,
+        explanation: ''
+      });
+      return { ...prev, chapters: updatedChapters };
     });
-    setFormData({ ...formData, chapters: updatedChapters });
-    // Expand the newly added question
-    setExpandedQuestions({
-      ...expandedQuestions,
-      [chapterIndex]: newQuestionIndex
-    });
+    
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [chapterIndex]: formData.chapters[chapterIndex].questions.length
+    }));
   };
 
   const removeQuestion = (chapterIndex, questionIndex) => {
-    const updatedChapters = [...formData.chapters];
-    updatedChapters[chapterIndex].questions = updatedChapters[chapterIndex].questions.filter(
-      (_, i) => i !== questionIndex
-    );
-    setFormData({ ...formData, chapters: updatedChapters });
-    
-    // Reset expanded question if the current one was deleted
-    if (expandedQuestions[chapterIndex] === questionIndex) {
-      const newExpanded = { ...expandedQuestions };
-      delete newExpanded[chapterIndex];
-      setExpandedQuestions(newExpanded);
+    if (window.confirm('Are you sure you want to remove this question?')) {
+      setFormData(prev => {
+        const updatedChapters = [...prev.chapters];
+        updatedChapters[chapterIndex].questions = updatedChapters[chapterIndex].questions.filter(
+          (_, i) => i !== questionIndex
+        );
+        return { ...prev, chapters: updatedChapters };
+      });
+      
+      setExpandedQuestions(prev => ({
+        ...prev,
+        [chapterIndex]: Math.max(0, (prev[chapterIndex] || 0) - 1)
+      }));
     }
   };
-  
+
   const toggleQuestion = (chapterIndex, questionIndex) => {
     setExpandedQuestions(prev => ({
       ...prev,
@@ -129,71 +167,108 @@ function CourseForm() {
   };
 
   const handleFileUpload = (chapterIndex, file) => {
-    const updatedChapters = [...formData.chapters];
-    updatedChapters[chapterIndex].pdf = file;
-    setFormData({ ...formData, chapters: updatedChapters });
+    setFormData(prev => {
+      const updatedChapters = [...prev.chapters];
+      updatedChapters[chapterIndex].pdf = file;
+      return { ...prev, chapters: updatedChapters };
+    });
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mx-auto max-w-4xl">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Create New Course</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-extrabold text-gray-900 bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+          Create New Course
+        </h2>
+        <p className="mt-2 text-sm text-gray-500">
+          Fill in the details below to create a new course with chapters and questions
+        </p>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Course Basic Info */}
         <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700">Course Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Introduction to Web Development"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows="3"
-                placeholder="A brief description of the course"
-                required
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1">Thumbnail URL</label>
-              <input
-                type="url"
-                id="thumbnail"
-                name="thumbnail"
-                value={formData.thumbnail}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/thumbnail.jpg"
-                required
-              />
+          <h3 className="text-lg font-semibold mb-6 text-gray-700">Course Information</h3>
+          <div className="space-y-6 bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative">
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
+                  Course Title
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                    placeholder="Enter course title"
+                    required
+                  />
+                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              <div className="relative">
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+                  Price (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    id="price"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                  <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                  Description
+                </label>
+                <div className="relative">
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                    rows="3"
+                    placeholder="A detailed description of the course content and objectives"
+                    required
+                  />
+                  <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                  <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
+                  Thumbnail URL
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    id="thumbnail"
+                    name="thumbnail"
+                    value={formData.thumbnail}
+                    onChange={handleChange}
+                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                    placeholder="https://example.com/thumbnail.jpg"
+                    required
+                  />
+                  <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
