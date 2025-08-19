@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Home, BookOpen, Users, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, FileText, FileQuestion, LogOut, PlusCircle, FileUp } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -32,7 +32,23 @@ const Sidebar = () => {
     { path: '/student/tests', label: 'Mock Tests' },
   ];
 
-  const navItems = user.role === 'admin' ? adminNavItems : user.role === 'student' ? studentNavItems : [];
+  const location = useLocation();
+  
+  const navItems = user.role === 'admin' 
+    ? [
+        { path: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+        { path: '/admin/create-course', label: 'Create Course', icon: <PlusCircle className="w-5 h-5" /> },
+        { path: '/admin/upload-pdf', label: 'Upload PDF', icon: <FileUp className="w-5 h-5" /> },
+        { path: '/admin/create-test', label: 'Create Test', icon: <FileQuestion className="w-5 h-5" /> },
+      ]
+    : user.role === 'student'
+    ? [
+        { path: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+        { path: '/student/courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
+        { path: '/student/pdfs', label: 'PDFs', icon: <FileText className="w-5 h-5" /> },
+        { path: '/student/tests', label: 'Mock Tests', icon: <FileQuestion className="w-5 h-5" /> },
+      ]
+    : [];
 
   return (
     <div
@@ -63,18 +79,24 @@ const Sidebar = () => {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className="block p-2 rounded hover:bg-blue-700"
+                  className={`flex items-center p-3 rounded-lg transition-colors ${
+                    location.pathname === item.path 
+                      ? 'bg-blue-700 text-white' 
+                      : 'text-blue-100 hover:bg-blue-700/50'
+                  }`}
                 >
-                  {isOpen ? item.label : item.label.charAt(0)}
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  {isOpen && <span className="ml-3">{item.label}</span>}
                 </Link>
               </li>
             ))}
             <li>
               <button
                 onClick={handleLogout}
-                className="block w-full text-left p-2 rounded hover:bg-blue-700"
+                className={`flex items-center w-full p-3 rounded-lg transition-colors text-blue-100 hover:bg-blue-700/50`}
               >
-                {isOpen ? 'Logout' : 'L'}
+                <LogOut className="w-5 h-5" />
+                {isOpen && <span className="ml-3">Logout</span>}
               </button>
             </li>
           </ul>

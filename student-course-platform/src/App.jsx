@@ -7,6 +7,7 @@ import Footer from './components/common/Footer';
 import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import CourseForm from './components/admin/CourseForm';
 import Login from './pages/Login';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -48,6 +49,14 @@ function AppContent() {
               }
             />
             <Route path="/login" element={<Login />} />
+            <Route 
+              path="/admin/create-course" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <CourseForm />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </main>
         <Footer />
