@@ -213,136 +213,154 @@ function CourseForm() {
       
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Course Basic Info */}
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-6 text-gray-700">Course Information</h3>
-          <div className="space-y-6 bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
-                  Course Title
-                </label>
+        <div className="bg-gray-50 rounded-lg border border-gray-200">
+          <div 
+            className="flex justify-between items-center p-6 cursor-pointer select-none"
+            onClick={() => setIsCourseInfoExpanded((prev) => !prev)}
+          >
+            <h3 className="text-lg font-semibold text-gray-700">Course Information</h3>
+            <button
+              type="button"
+              className="focus:outline-none"
+              aria-label={isCourseInfoExpanded ? 'Collapse section' : 'Expand section'}
+            >
+              {isCourseInfoExpanded ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </div>
+          {isCourseInfoExpanded && (
+            <div className="space-y-6 bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative">
-                  <input
-                    type="text"
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                    placeholder="Enter course title"
-                    required
-                  />
-                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-              <div className="relative">
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                  <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
-                  Price (₹)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                  <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                  Description
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                    rows="3"
-                    placeholder="A detailed description of the course content and objectives"
-                    required
-                  />
-                  <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                  <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
-                  Course Thumbnail
-                </label>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-4">
-                    <label className="cursor-pointer bg-white py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                      <span className="flex items-center">
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        Choose Image
-                      </span>
-                      <input
-                        type="file"
-                        id="thumbnail"
-                        name="thumbnail"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={(e) => handleThumbnailUpload(e.target.files[0])}
-                        required
-                      />
-                    </label>
-                    {formData.thumbnail && (
-                      <span className="text-sm text-gray-600">
-                        {formData.thumbnail.name} ({(formData.thumbnail.size / 1024).toFixed(2)} KB)
-                      </span>
-                    )}
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
+                    Course Title
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                      placeholder="Enter course title"
+                      required
+                    />
+                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
-                  
-                  {formData.thumbnail && (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                        <img
-                          src={URL.createObjectURL(formData.thumbnail)}
-                          alt="Course thumbnail preview"
-                          className="w-full h-full object-cover"
+                </div>
+                <div className="relative">
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+                    Price (₹)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      id="price"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                    Description
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                      rows="3"
+                      placeholder="A detailed description of the course content and objectives"
+                      required
+                    />
+                    <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Course Thumbnail
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <label className="cursor-pointer bg-white py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <span className="flex items-center">
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Choose Image
+                        </span>
+                        <input
+                          type="file"
+                          id="thumbnail"
+                          name="thumbnail"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => handleThumbnailUpload(e.target.files[0])}
+                          required
                         />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-600">
-                          <strong>File:</strong> {formData.thumbnail.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          <strong>Size:</strong> {(formData.thumbnail.size / 1024).toFixed(2)} KB
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          <strong>Type:</strong> {formData.thumbnail.type}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleThumbnailUpload(null)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                        title="Remove thumbnail"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      </label>
+                      {formData.thumbnail && (
+                        <span className="text-sm text-gray-600">
+                          {formData.thumbnail.name} ({(formData.thumbnail.size / 1024).toFixed(2)} KB)
+                        </span>
+                      )}
                     </div>
-                  )}
-                  
-                  <p className="text-xs text-gray-500">
-                    Recommended: Square image (800x800px or larger), JPG, PNG, or WebP format
-                  </p>
+                    
+                    {formData.thumbnail && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                          <img
+                            src={URL.createObjectURL(formData.thumbnail)}
+                            alt="Course thumbnail preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600">
+                            <strong>File:</strong> {formData.thumbnail.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <strong>Size:</strong> {(formData.thumbnail.size / 1024).toFixed(2)} KB
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <strong>Type:</strong> {formData.thumbnail.type}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleThumbnailUpload(null)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Remove thumbnail"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-gray-500">
+                      Recommended: Square image (800x800px or larger), JPG, PNG, or WebP format
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Chapters Section */}
