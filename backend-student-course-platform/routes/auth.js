@@ -100,10 +100,12 @@ router.post('/google-signin', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.googleProfile.name,
-        photoUrl: user.googleProfile.photoUrl,
-        email: user.googleProfile.email,
-        role: user.role
+        role: user.role,
+        googleProfile: {
+          name: user.googleProfile.name,
+          photoUrl: user.googleProfile.photoUrl,
+          email: user.googleProfile.email
+        }
       }
     });
   } catch (error) {

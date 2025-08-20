@@ -42,18 +42,19 @@ export function AuthProvider({ children }) {
     // Store user data in localStorage
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // Store user data in state
+    // Store user data in state with proper structure
     setUser({
       isAuthenticated: true,
       role: userData.role,
-      name: userData.name || userData.username || '',
-      email: userData.email || '',
-      username: userData.username || '',
+      name: userData.googleProfile?.name || userData.username || '',
+      email: userData.googleProfile?.email || userData.email || '',
+      username: userData.username || userData.googleProfile?.name || '',
       googleProfile: userData.googleProfile || {
-        name: userData.name || '',
+        name: userData.name || userData.username || '',
         photoUrl: userData.photoUrl || '',
         email: userData.email || ''
-      }
+      },
+      purchasedCourses: userData.purchasedCourses || []
     });
   };
 
