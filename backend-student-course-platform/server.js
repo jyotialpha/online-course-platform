@@ -9,6 +9,7 @@ const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
+const adminCoursesRoutes = require('./routes/adminCourses');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -19,7 +20,7 @@ const port = process.env.PORT || 5001;
 
 // Log all incoming requests
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  // console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
@@ -48,6 +49,7 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
+app.use('/api/admin', adminCoursesRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

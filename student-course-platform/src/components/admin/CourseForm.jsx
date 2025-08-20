@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../config/api';
 import { 
   Plus, 
   Trash2, 
@@ -47,32 +48,63 @@ function CourseForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Validate required files
-      if (!formData.thumbnail) {
-        alert('Please select a course thumbnail image');
-        setIsSubmitting(false);
-        return;
-      }
+      // Prepare payload
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        thumbnail: null,
+        chapters: formData.chapters.map(ch => ({
+          title: ch.title,
+          description: ch.description,
+          pdf: null,
+          questions: ch.questions.map(q => ({
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation
+          }))
+        }))
+      };
 
-      // Check if all chapters have PDFs
-      const chaptersWithoutPDF = formData.chapters.filter(chapter => !chapter.pdf);
-      if (chaptersWithoutPDF.length > 0) {
-        alert('Please upload PDF files for all chapters');
-        setIsSubmitting(false);
-        return;
-      }
+      console.log('Payload:', payload);
 
-      // TODO: Replace with actual API call
-      console.log('Submitting course:', formData);
-      console.log('Thumbnail file:', formData.thumbnail);
-      console.log('PDF files:', formData.chapters.map(ch => ({ title: ch.title, pdf: ch.pdf?.name })));
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
       
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/admin/courses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        throw new Error('Server returned invalid JSON');
+      }
+
+      if (!res.ok) {
+        // Show full backend error message if available
+        const errorMsg = data.message || 'Failed to create course';
+        const backendError = data.error ? `\nDetails: ${data.error}` : '';
+        throw new Error(errorMsg + backendError);
+      }
       alert('Course created successfully!');
       navigate('/admin/dashboard');
     } catch (error) {
       console.error('Error creating course:', error);
-      alert('Failed to create course. Please try again.');
+      alert(error.message || 'Failed to create course. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -312,7 +344,6 @@ function CourseForm() {
                           accept="image/*"
                           className="sr-only"
                           onChange={(e) => handleThumbnailUpload(e.target.files[0])}
-                          required
                         />
                       </label>
                       {formData.thumbnail && (
