@@ -8,6 +8,8 @@ import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import CourseForm from './components/admin/CourseForm';
+import PDFUploadForm from './components/admin/PDFUploadForm';
+import MockTestForm from './components/admin/MockTestForm';
 import Login from './pages/Login';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -54,6 +56,22 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <CourseForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/upload-pdf" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <PDFUploadForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/create-test" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <MockTestForm />
                 </ProtectedRoute>
               }
             />

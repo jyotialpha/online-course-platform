@@ -15,7 +15,7 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5001;
 
 // Log all incoming requests
 app.use((req, res, next) => {

@@ -5,7 +5,7 @@ const router = express.Router();
 router.get('/admin', authenticateToken, restrictTo('admin'), (req, res) => {
   res.json({ message: 'Welcome Admin',
     user: {
-      id: req.user._id,
+      id: req.user.id,
       username: req.user.username,
       role: req.user.role
     }

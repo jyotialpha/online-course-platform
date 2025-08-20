@@ -117,4 +117,9 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logout successful' });
 });
 
+// Also support GET logout for frontend compatibility
+router.get('/logout', (req, res) => {
+  res.json({ message: 'Logout successful' });
+});
+
 module.exports = router;
