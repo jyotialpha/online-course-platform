@@ -20,7 +20,7 @@ function CourseForm() {
     title: '',
     description: '',
     price: '',
-    thumbnail: '',
+    thumbnail: null,
     chapters: [
       {
         title: '',
@@ -39,6 +39,7 @@ function CourseForm() {
   });
   const [expandedChapter, setExpandedChapter] = useState(0);
   const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 });
+  const [isCourseInfoExpanded, setIsCourseInfoExpanded] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -46,8 +47,26 @@ function CourseForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Validate required files
+      if (!formData.thumbnail) {
+        alert('Please select a course thumbnail image');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check if all chapters have PDFs
+      const chaptersWithoutPDF = formData.chapters.filter(chapter => !chapter.pdf);
+      if (chaptersWithoutPDF.length > 0) {
+        alert('Please upload PDF files for all chapters');
+        setIsSubmitting(false);
+        return;
+      }
+
       // TODO: Replace with actual API call
       console.log('Submitting course:', formData);
+      console.log('Thumbnail file:', formData.thumbnail);
+      console.log('PDF files:', formData.chapters.map(ch => ({ title: ch.title, pdf: ch.pdf?.name })));
+      
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       alert('Course created successfully!');
       navigate('/admin/dashboard');
@@ -174,6 +193,13 @@ function CourseForm() {
     });
   };
 
+  const handleThumbnailUpload = (file) => {
+    setFormData(prev => ({
+      ...prev,
+      thumbnail: file
+    }));
+  };
+
   return (
     <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
       <div className="mb-8 text-center">
@@ -253,20 +279,66 @@ function CourseForm() {
               <div className="md:col-span-2">
                 <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
                   <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
-                  Thumbnail URL
+                  Course Thumbnail
                 </label>
-                <div className="relative">
-                  <input
-                    type="url"
-                    id="thumbnail"
-                    name="thumbnail"
-                    value={formData.thumbnail}
-                    onChange={handleChange}
-                    className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                    placeholder="https://example.com/thumbnail.jpg"
-                    required
-                  />
-                  <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-4">
+                    <label className="cursor-pointer bg-white py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                      <span className="flex items-center">
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Choose Image
+                      </span>
+                      <input
+                        type="file"
+                        id="thumbnail"
+                        name="thumbnail"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => handleThumbnailUpload(e.target.files[0])}
+                        required
+                      />
+                    </label>
+                    {formData.thumbnail && (
+                      <span className="text-sm text-gray-600">
+                        {formData.thumbnail.name} ({(formData.thumbnail.size / 1024).toFixed(2)} KB)
+                      </span>
+                    )}
+                  </div>
+                  
+                  {formData.thumbnail && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                        <img
+                          src={URL.createObjectURL(formData.thumbnail)}
+                          alt="Course thumbnail preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">
+                          <strong>File:</strong> {formData.thumbnail.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          <strong>Size:</strong> {(formData.thumbnail.size / 1024).toFixed(2)} KB
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          <strong>Type:</strong> {formData.thumbnail.type}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleThumbnailUpload(null)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove thumbnail"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">
+                    Recommended: Square image (800x800px or larger), JPG, PNG, or WebP format
+                  </p>
                 </div>
               </div>
             </div>
@@ -471,9 +543,17 @@ function CourseForm() {
         <div className="pt-4 border-t border-gray-200">
           <button
             type="submit"
-            className="w-full md:w-auto px-6 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={isSubmitting}
+            className="w-full md:w-auto px-6 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            Create Course
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating Course...
+              </div>
+            ) : (
+              'Create Course'
+            )}
           </button>
         </div>
       </form>
