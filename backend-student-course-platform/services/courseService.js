@@ -6,21 +6,44 @@ class CourseService {
     return await courseRepository.create(courseData);
   }
 
-  async updateCourse(id, updateData) {
+  async updateCourse(courseId, updateData) {
     this.validateCourseData(updateData, true);
-    return await courseRepository.update(id, updateData);
+    return await courseRepository.update(courseId, updateData);
   }
 
-  async deleteCourse(id) {
-    return await courseRepository.delete(id);
+  async deleteCourse(courseId) {
+    return await courseRepository.delete(courseId);
   }
 
-  async getCourse(id) {
-    return await courseRepository.getById(id);
+  async getCourse(courseId) {
+    return await courseRepository.getById(courseId);
   }
 
   async getAllCourses() {
-    return await courseRepository.getAll();
+    console.log('CourseService: getAllCourses called');
+    const courses = await courseRepository.getAll();
+    console.log('CourseService: courses from repository:', courses);
+    return courses;
+  }
+
+  async getCourseCount(filter = {}) {
+    console.log('CourseService: getCourseCount called with filter:', filter);
+    return await courseRepository.getCount(filter);
+  }
+
+  async getCoursesWithPagination(filter = {}, sort = {}, skip = 0, limit = 10) {
+    console.log('CourseService: getCoursesWithPagination called:', { filter, sort, skip, limit });
+    return await courseRepository.getWithPagination(filter, sort, skip, limit);
+  }
+
+  async getTotalChapters(filter = {}) {
+    console.log('CourseService: getTotalChapters called with filter:', filter);
+    return await courseRepository.getTotalChapters(filter);
+  }
+
+  async getTotalQuestions(filter = {}) {
+    console.log('CourseService: getTotalQuestions called with filter:', filter);
+    return await courseRepository.getTotalQuestions(filter);
   }
 
   validateCourseData(courseData, isUpdate = false) {

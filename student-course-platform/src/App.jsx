@@ -8,6 +8,8 @@ import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import CourseForm from './components/admin/CourseForm';
+import CourseEditForm from './components/admin/CourseEditForm';
+import CourseView from './components/admin/CourseView';
 import PDFUploadForm from './components/admin/PDFUploadForm';
 import MockTestForm from './components/admin/MockTestForm';
 import Login from './pages/Login';
@@ -56,6 +58,22 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <CourseForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/edit-course/:courseId" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <CourseEditForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/view-course/:courseId" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <CourseView />
                 </ProtectedRoute>
               }
             />

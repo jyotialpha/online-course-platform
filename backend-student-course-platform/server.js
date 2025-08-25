@@ -63,6 +63,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 app.use('/api/admin', adminCoursesRoutes);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'public')));
