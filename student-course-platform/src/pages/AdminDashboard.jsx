@@ -95,7 +95,7 @@ const AdminDashboardContent = () => {
     }
   };
 
-  const fetchCourses = async (page = 1, search = searchTerm, sort = sortBy, order = sortOrder) => {
+  const fetchCourses = async (page = 1, search = searchTerm, sort = sortBy, order = sortOrder, limit = pageSize) => {
     try {
       const token = localStorage.getItem('token');
       console.log('Token:', token ? 'Present' : 'Missing');
@@ -103,7 +103,7 @@ const AdminDashboardContent = () => {
       // Build query parameters
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pageSize.toString(),
+        limit: limit.toString(),
         search: search || '',
         sortBy: sort || 'createdAt',
         sortOrder: order || 'desc'
@@ -208,7 +208,7 @@ const AdminDashboardContent = () => {
     setPaginationLoading(true);
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page
-    fetchCourses(1, searchTerm, sortBy, sortOrder);
+    fetchCourses(1, searchTerm, sortBy, sortOrder, newPageSize);
   };
 
   // Search handler with debouncing
