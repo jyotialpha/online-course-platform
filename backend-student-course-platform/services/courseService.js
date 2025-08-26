@@ -20,29 +20,29 @@ class CourseService {
   }
 
   async getAllCourses() {
-    console.log('CourseService: getAllCourses called');
+    // console.log('CourseService: getAllCourses called');
     const courses = await courseRepository.getAll();
-    console.log('CourseService: courses from repository:', courses);
+    // console.log('CourseService: courses from repository:', courses);
     return courses;
   }
 
   async getCourseCount(filter = {}) {
-    console.log('CourseService: getCourseCount called with filter:', filter);
+    // console.log('CourseService: getCourseCount called with filter:', filter);
     return await courseRepository.getCount(filter);
   }
 
   async getCoursesWithPagination(filter = {}, sort = {}, skip = 0, limit = 10) {
-    console.log('CourseService: getCoursesWithPagination called:', { filter, sort, skip, limit });
+    // console.log('CourseService: getCoursesWithPagination called:', { filter, sort, skip, limit });
     return await courseRepository.getWithPagination(filter, sort, skip, limit);
   }
 
   async getTotalChapters(filter = {}) {
-    console.log('CourseService: getTotalChapters called with filter:', filter);
+    // console.log('CourseService: getTotalChapters called with filter:', filter);
     return await courseRepository.getTotalChapters(filter);
   }
 
   async getTotalQuestions(filter = {}) {
-    console.log('CourseService: getTotalQuestions called with filter:', filter);
+    // console.log('CourseService: getTotalQuestions called with filter:', filter);
     return await courseRepository.getTotalQuestions(filter);
   }
 

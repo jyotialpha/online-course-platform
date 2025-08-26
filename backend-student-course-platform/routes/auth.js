@@ -27,7 +27,7 @@ router.post('/admin/register', async (req, res) => {
     await user.save();
     res.status(201).json({ message: 'Admin registered' });
   } catch (error) {
-    console.error('Admin register error:', error);
+    // console.error('Admin register error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -62,7 +62,7 @@ router.post('/admin/login', loginLimiter, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Admin login error:', error);
+    // console.error('Admin login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -109,7 +109,7 @@ router.post('/google-signin', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Google sign-in error:', error);
+    // console.error('Google sign-in error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

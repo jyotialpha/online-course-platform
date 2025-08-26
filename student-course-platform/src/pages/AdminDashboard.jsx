@@ -61,10 +61,10 @@ const AdminDashboardContent = () => {
   }
 
   useEffect(() => {
-    // Debug authentication state
-    console.log('Current user state:', user);
-    console.log('LocalStorage token:', localStorage.getItem('token'));
-    console.log('LocalStorage user:', localStorage.getItem('user'));
+    // // Debug authentication state
+    // console.log('Current user state:', user);
+    // console.log('LocalStorage token:', localStorage.getItem('token'));
+    // console.log('LocalStorage user:', localStorage.getItem('user'));
     
     // First test the API connection
     testAPIConnection();
@@ -74,31 +74,31 @@ const AdminDashboardContent = () => {
 
   const testAPIConnection = async () => {
     try {
-      console.log('Testing API connection...');
+      // console.log('Testing API connection...');
       
       // Test backend health
       const healthResponse = await fetch(`${API_BASE_URL}/health`);
       const healthData = await healthResponse.json();
-      console.log('Backend health:', healthData);
+      // console.log('Backend health:', healthData);
       
       // Test admin routes
       const response = await fetch(`${API_BASE_URL}/api/admin/test`);
       const data = await response.json();
-      console.log('API test response:', data);
+      // console.log('API test response:', data);
       
       // Test database status
       const dbResponse = await fetch(`${API_BASE_URL}/api/admin/db-status`);
       const dbData = await dbResponse.json();
-      console.log('Database status:', dbData);
+      // console.log('Database status:', dbData);
     } catch (error) {
-      console.error('API connection test failed:', error);
+      // console.error('API connection test failed:', error);
     }
   };
 
   const fetchCourses = async (page = 1, search = searchTerm, sort = sortBy, order = sortOrder, limit = pageSize) => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Token:', token ? 'Present' : 'Missing');
+      // console.log('Token:', token ? 'Present' : 'Missing');
       
       // Build query parameters
       const params = new URLSearchParams({
@@ -110,7 +110,7 @@ const AdminDashboardContent = () => {
       });
       
       const apiUrl = `${API_BASE_URL}/api/admin/courses?${params}`;
-      console.log('API URL:', apiUrl);
+      // console.log('API URL:', apiUrl);
       
       const response = await fetch(apiUrl, {
         headers: {
@@ -119,12 +119,12 @@ const AdminDashboardContent = () => {
         credentials: 'include',
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      // console.log('Response status:', response.status);
+      // console.log('Response ok:', response.ok);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Response data:', data);
+        // console.log('Response data:', data);
         
         setCourses(data.data.courses || []);
         setPaginationInfo(data.pagination || {});
@@ -142,13 +142,13 @@ const AdminDashboardContent = () => {
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to fetch courses:', errorData.message || 'Unknown error');
-        console.error('Full error response:', errorData);
+        // console.error('Failed to fetch courses:', errorData.message || 'Unknown error');
+        // console.error('Full error response:', errorData);
         // Show error to user
         alert(`Failed to fetch courses: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      // console.error('Error fetching courses:', error);
       alert(`Error fetching courses: ${error.message}`);
     } finally {
       setLoading(false);
@@ -184,7 +184,7 @@ const AdminDashboardContent = () => {
         alert(errorData.message || 'Failed to delete course');
       }
     } catch (error) {
-      console.error('Error deleting course:', error);
+      // console.error('Error deleting course:', error);
       alert('Error deleting course');
     }
   };
@@ -276,7 +276,7 @@ const AdminDashboardContent = () => {
         </div>
 
         {/* Debug Section - Remove this in production */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <h3 className="text-lg font-semibold text-yellow-800 mb-2">Debug Information</h3>
           <div className="text-sm text-yellow-700 space-y-1">
             <p><strong>User Authenticated:</strong> {user.isAuthenticated ? 'Yes' : 'No'}</p>
@@ -291,7 +291,7 @@ const AdminDashboardContent = () => {
           >
             Test API Connection
           </button>
-        </div>
+        </div> */}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">

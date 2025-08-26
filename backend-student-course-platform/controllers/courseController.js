@@ -48,7 +48,7 @@ class CourseController {
 
   async getAllCourses(req, res, next) {
     try {
-      console.log('Getting all courses...');
+      // console.log('Getting all courses...');
       
       // Extract pagination and search parameters
       const page = parseInt(req.query.page) || 1;
@@ -57,7 +57,7 @@ class CourseController {
       const sortBy = req.query.sortBy || 'createdAt';
       const sortOrder = req.query.sortOrder || 'desc';
       
-      console.log('Pagination params:', { page, limit, search, sortBy, sortOrder });
+      // console.log('Pagination params:', { page, limit, search, sortBy, sortOrder });
       
       // Calculate skip value for pagination
       const skip = (page - 1) * limit;
@@ -87,10 +87,10 @@ class CourseController {
       const totalChapters = await courseService.getTotalChapters(filter);
       const totalQuestions = await courseService.getTotalQuestions(filter);
       
-      console.log('Courses found:', courses.length);
-      console.log('Total courses:', totalCourses);
-      console.log('Total chapters:', totalChapters);
-      console.log('Total questions:', totalQuestions);
+      // console.log('Courses found:', courses.length);
+      // console.log('Total courses:', totalCourses);
+      // console.log('Total chapters:', totalChapters);
+      // console.log('Total questions:', totalQuestions);
       
       // Calculate pagination info
       const totalPages = Math.ceil(totalCourses / limit);
@@ -113,7 +113,7 @@ class CourseController {
         data: { courses }
       });
     } catch (error) {
-      console.error('Error in getAllCourses:', error);
+      // console.error('Error in getAllCourses:', error);
       next(error);
     }
   }
