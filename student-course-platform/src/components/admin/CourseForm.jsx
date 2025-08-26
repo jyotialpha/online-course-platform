@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/api';
+import OdiaInputField, { OdiaSidebar } from '../common/OdiaInputField';
 import { 
   Plus, 
   Trash2, 
@@ -233,7 +234,9 @@ function CourseForm() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
+    <>
+      <OdiaSidebar />
+      <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-extrabold text-gray-900 bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
           Create New Course
@@ -606,7 +609,8 @@ function CourseForm() {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }
 

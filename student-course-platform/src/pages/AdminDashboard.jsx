@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { API_BASE_URL } from '../config/api';
+import OdiaInputField, { OdiaSidebar } from '../components/common/OdiaInputField';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -330,11 +331,10 @@ const AdminDashboardContent = () => {
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search courses..."
+                <OdiaInputField
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search courses... (Odia supported)"
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
                 />
               </div>
@@ -621,6 +621,7 @@ const AdminDashboardContent = () => {
           Logout
         </button>
       </div>
+      <OdiaSidebar />
     </div>
   );
 }

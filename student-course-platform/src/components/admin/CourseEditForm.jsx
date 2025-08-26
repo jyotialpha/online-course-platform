@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/api';
+import OdiaInputField, { OdiaSidebar } from '../common/OdiaInputField';
 import { 
   Plus, 
   Trash2, 
@@ -288,7 +289,9 @@ function CourseEditForm() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
+    <>
+      <OdiaSidebar />
+      <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-xl mx-auto max-w-4xl border border-gray-100">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center mb-4">
@@ -338,13 +341,12 @@ function CourseEditForm() {
                     Course Title
                   </label>
                   <div className="relative">
-                    <input
-                      type="text"
+                    <OdiaInputField
                       id="title"
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
-                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                      className="pl-10"
                       placeholder="Enter course title"
                       required
                     />
@@ -378,13 +380,14 @@ function CourseEditForm() {
                     Description
                   </label>
                   <div className="relative">
-                    <textarea
+                    <OdiaInputField
+                      as="textarea"
                       id="description"
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
-                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                      rows="3"
+                      className="pl-10"
+                      rows={3}
                       placeholder="A detailed description of the course content and objectives"
                       required
                     />
@@ -444,22 +447,20 @@ function CourseEditForm() {
                 <div className="p-4 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Chapter Title</label>
-                    <input
-                      type="text"
+                    <OdiaInputField
                       value={chapter.title}
                       onChange={(e) => handleChapterChange(chapterIndex, 'title', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Chapter title"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea
+                    <OdiaInputField
+                      as="textarea"
                       value={chapter.description}
                       onChange={(e) => handleChapterChange(chapterIndex, 'description', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows="2"
+                      rows={2}
                       placeholder="Chapter description"
                       required
                     />
@@ -512,12 +513,12 @@ function CourseEditForm() {
                         {expandedQuestions[chapterIndex] === questionIndex && (
                           <div className="p-4 pt-0 space-y-3">
                             <div>
-                              <input
-                                type="text"
+                              <OdiaInputField
+                                as="textarea"
                                 value={question.question}
                                 onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'question', e.target.value)}
-                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="Enter question text"
+                                rows={2}
                                 required
                               />
                             </div>
@@ -528,11 +529,10 @@ function CourseEditForm() {
                                   <span className="mr-2 text-sm font-medium text-gray-700 w-5">
                                     {String.fromCharCode(65 + optionIndex)}.
                                   </span>
-                                  <input
-                                    type="text"
+                                  <OdiaInputField
                                     value={option}
                                     onChange={(e) => handleOptionChange(chapterIndex, questionIndex, optionIndex, e.target.value)}
-                                    className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="flex-1"
                                     placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
                                     required
                                   />
@@ -549,12 +549,12 @@ function CourseEditForm() {
                             </div>
 
                             <div>
-                              <textarea
+                              <OdiaInputField
+                                as="textarea"
                                 value={question.explanation}
                                 onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'explanation', e.target.value)}
-                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                rows="2"
                                 placeholder="Explanation for the correct answer"
+                                rows={2}
                               />
                             </div>
                           </div>
@@ -597,7 +597,8 @@ function CourseEditForm() {
           </div>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }
 
