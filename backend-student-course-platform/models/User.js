@@ -11,6 +11,13 @@ const userSchema = new mongoose.Schema({
     email: { type: String }
   },
   role: { type: String, enum: ['student', 'admin'], default: 'student' },
+  enrolledCourses: [{
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    enrolledAt: { type: Date, default: Date.now },
+    status: { type: String, enum: ['enrolled', 'purchased'], default: 'enrolled' },
+    paymentId: { type: String }, // For future purchase implementation
+    amount: { type: Number, default: 0 } // For future purchase implementation
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

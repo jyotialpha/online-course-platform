@@ -6,6 +6,8 @@ import Sidebar from './components/common/Sidebar';
 import Footer from './components/common/Footer';
 import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentCourses from './pages/StudentCourses';
+import MyCourses from './pages/MyCourses';
 import AdminDashboard from './pages/AdminDashboard';
 import CourseForm from './components/admin/CourseForm';
 import CourseEditForm from './components/admin/CourseEditForm';
@@ -41,6 +43,22 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/student/courses" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentCourses />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/student/my-courses" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <MyCourses />
                 </ProtectedRoute>
               }
             />

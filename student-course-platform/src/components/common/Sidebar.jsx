@@ -44,8 +44,8 @@ const Sidebar = () => {
     : user.role === 'student'
     ? [
         { path: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-        { path: '/student/courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
-        { path: '/student/pdfs', label: 'PDFs', icon: <FileText className="w-5 h-5" /> },
+        { path: '/student/courses', label: 'All Courses', icon: <BookOpen className="w-5 h-5" /> },
+        { path: '/student/my-courses', label: 'My Courses', icon: <FileText className="w-5 h-5" /> },
         { path: '/student/tests', label: 'Mock Tests', icon: <FileQuestion className="w-5 h-5" /> },
       ]
     : [];

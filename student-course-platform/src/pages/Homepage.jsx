@@ -3,46 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, BookOpen, Zap, Clock, Play, Users, Award, TrendingUp, ArrowRight, Rocket, Target, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-// Mock data for courses
-const mockCourses = [
-  {
-    id: 1,
-    title: "React Masterclass",
-    description: "Master React with hands-on projects and real-world applications",
-    instructor: "Sarah Chen",
-    rating: 4.9,
-    students: 2847,
-    duration: "12 hours",
-    price: 99,
-    level: "Advanced",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop"
-  },
-  {
-    id: 2,
-    title: "Python for Data Science",
-    description: "Learn Python programming for data analysis and machine learning",
-    instructor: "Dr. Mike Johnson",
-    rating: 4.8,
-    students: 3421,
-    duration: "16 hours",
-    price: 129,
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop"
-  },
-  {
-    id: 3,
-    title: "UI/UX Design Fundamentals",
-    description: "Create beautiful and functional designs that users love",
-    instructor: "Emma Rodriguez",
-    rating: 4.9,
-    students: 1923,
-    duration: "10 hours",
-    price: 79,
-    level: "Beginner",
-    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop"
-  }
-];
+import { API_BASE_URL } from '../config/api';
 
 // Animation variants
 const heroVariants = {
@@ -194,17 +155,23 @@ const CourseCard = ({ course, delay }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
-  const getLevelColor = (level) => {
-    switch (level) {
-      case 'Beginner':
-        return 'bg-green-500';
-      case 'Intermediate':
-        return 'bg-yellow-500';
-      case 'Advanced':
-        return 'bg-red-500';
-      default:
-        return 'bg-blue-500';
-    }
+  const getLevelColor = (chapters) => {
+    const chapterCount = chapters?.length || 0;
+    if (chapterCount <= 2) return 'bg-green-500';
+    if (chapterCount <= 5) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const getLevelText = (chapters) => {
+    const chapterCount = chapters?.length || 0;
+    if (chapterCount <= 2) return 'Beginner';
+    if (chapterCount <= 5) return 'Intermediate';
+    return 'Advanced';
+  };
+
+  const getQuestionCount = (chapters) => {
+    return chapters?.reduce((total, chapter) => 
+      total + (chapter.questions?.length || 0), 0) || 0;
   };
 
   return (
@@ -224,22 +191,28 @@ const CourseCard = ({ course, delay }) => {
         transition={{ duration: 0.5 }}
       />
       <div className="relative h-56 overflow-hidden">
-        <motion.img
-          src={course.image}
-          alt={course.title}
-          className="w-full h-full object-cover"
-          animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 1 : 0 }}
-          transition={{ duration: 1 }}
-        />
+        {course.thumbnail ? (
+          <motion.img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover"
+            animate={{ scale: isHovered ? 1.1 : 1, rotate: isHovered ? 1 : 0 }}
+            transition={{ duration: 1 }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+            <BookOpen className="w-16 h-16 text-white" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute top-4 left-4 flex gap-2">
-          <div className={`${getLevelColor(course.level)} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
-            {course.level}
+          <div className={`${getLevelColor(course.chapters)} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
+            {getLevelText(course.chapters)}
           </div>
         </div>
         <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg">
-          <Star className="w-3 h-3 fill-current" />
-          {course.rating}
+          <BookOpen className="w-3 h-3 fill-current" />
+          {course.chapters?.length || 0}
         </div>
         <motion.div
           className="absolute inset-0 bg-black/40 flex items-center justify-center"
@@ -268,19 +241,19 @@ const CourseCard = ({ course, delay }) => {
         <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
-              <Users className="w-4 h-4" />
-              {course.students.toLocaleString()}
+              <BookOpen className="w-4 h-4" />
+              {course.chapters?.length || 0} chapters
             </span>
             <span className="flex items-center gap-1 hover:text-purple-400 transition-colors">
               <Clock className="w-4 h-4" />
-              {course.duration}
+              {getQuestionCount(course.chapters)} questions
             </span>
           </div>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              ${course.price}
+              ₹{course.price}
             </span>
             <span className="text-xs text-gray-400">one-time payment</span>
           </div>
@@ -390,14 +363,51 @@ function Homepage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [allCourses, setAllCourses] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
-    // console.log('Homepage: User', user);
-    // console.log('Homepage: Courses', mockCourses);
+    fetchCourses();
   }, [user]);
 
-  const filteredCourses = mockCourses.filter(
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/public/courses?limit=6`);
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.data.courses || []);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMoreCourses = async (page) => {
+    setLoadingMore(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/public/courses?page=${page}&limit=8`);
+      if (response.ok) {
+        const data = await response.json();
+        if (page === 1) {
+          setAllCourses(data.data.courses || []);
+        } else {
+          setAllCourses(prev => [...prev, ...(data.data.courses || [])]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching more courses:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -548,22 +558,134 @@ function Homepage() {
             </p>
           </motion.div>
           <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {filteredCourses.map((course, index) => (
-                <CourseCard key={course.id} course={course} delay={index} />
-              ))}
-            </div>
-            {filteredCourses.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-20"
-              >
-                <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-2xl text-gray-400">No courses found. Try different keywords!</p>
-              </motion.div>
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-400"></div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                  {filteredCourses.map((course, index) => (
+                    <CourseCard key={course._id} course={course} delay={index} />
+                  ))}
+                </div>
+                {filteredCourses.length === 0 && !loading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-20"
+                  >
+                    <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-2xl text-gray-400">
+                      {courses.length === 0 ? 'No courses available yet!' : 'No courses found. Try different keywords!'}
+                    </p>
+                  </motion.div>
+                )}
+              </>
             )}
           </AnimatePresence>
+        </div>
+      </section>
+
+      {/* View More Courses Section */}
+      <section className="py-24 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-6">
+              Explore All Courses
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+              Discover our complete collection of courses designed to advance your skills
+            </p>
+            <motion.button
+              onClick={() => {
+                fetchMoreCourses(1);
+                setCurrentPage(1);
+              }}
+              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold rounded-2xl"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+            >
+              View All Courses
+            </motion.button>
+          </motion.div>
+          
+          {allCourses.length > 0 && (
+            <>
+              <div className="overflow-x-auto pb-6">
+                <div className="flex gap-6 min-w-max">
+                  {allCourses.map((course, index) => (
+                    <motion.div
+                      key={course._id}
+                      className="flex-shrink-0 w-80"
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <div className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/20 h-full">
+                        <div className="relative h-48 overflow-hidden">
+                          {course.thumbnail ? (
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+                              <BookOpen className="w-12 h-12 text-white" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-sm font-bold">
+                            {course.chapters?.length || 0} chapters
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">{course.title}</h3>
+                          <p className="text-gray-300 text-sm mb-4 line-clamp-2">{course.description}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                              ₹{course.price}
+                            </span>
+                            <Link
+                              to={user.isAuthenticated ? `/student/courses` : `/login`}
+                              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl text-sm"
+                            >
+                              {user.isAuthenticated ? 'View' : 'Enroll'}
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+              
+              {allCourses.length >= 8 && (
+                <div className="text-center mt-8">
+                  <motion.button
+                    onClick={() => {
+                      const nextPage = currentPage + 1;
+                      fetchMoreCourses(nextPage);
+                      setCurrentPage(nextPage);
+                    }}
+                    disabled={loadingMore}
+                    className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-2xl disabled:opacity-50"
+                    whileHover={{ scale: loadingMore ? 1 : 1.05 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {loadingMore ? 'Loading...' : 'Load More Courses'}
+                  </motion.button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
