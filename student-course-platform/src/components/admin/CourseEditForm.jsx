@@ -90,6 +90,22 @@ function CourseEditForm() {
       // Upload new thumbnail if exists, otherwise keep existing
       let thumbnailUrl = currentCourse?.thumbnail;
       if (formData.thumbnail) {
+        // Delete old thumbnail if exists
+        if (currentCourse?.thumbnail) {
+          try {
+            await fetch(`${API_BASE_URL}/api/upload/delete-file`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ fileUrl: currentCourse.thumbnail })
+            });
+          } catch (error) {
+            console.log('Failed to delete old thumbnail:', error);
+          }
+        }
+        
         const thumbnailFormData = new FormData();
         thumbnailFormData.append('thumbnail', formData.thumbnail);
         
@@ -113,6 +129,22 @@ function CourseEditForm() {
           
           // If it's a new file (File object), upload it
           if (ch.pdf && typeof ch.pdf === 'object' && ch.pdf.name) {
+            // Delete old PDF if exists
+            if (currentCourse?.chapters?.[index]?.pdf) {
+              try {
+                await fetch(`${API_BASE_URL}/api/upload/delete-file`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ fileUrl: currentCourse.chapters[index].pdf })
+                });
+              } catch (error) {
+                console.log('Failed to delete old PDF:', error);
+              }
+            }
+            
             const pdfFormData = new FormData();
             pdfFormData.append('pdf', ch.pdf);
             

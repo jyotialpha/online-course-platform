@@ -4,6 +4,41 @@ const { authenticateToken, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Delete file from S3
+router.delete('/delete-file', authenticateToken, restrictTo('admin'), async (req, res) => {
+  try {
+    const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client } = require('../config/s3');
+    const { fileUrl } = req.body;
+    
+    if (!fileUrl) {
+      return res.status(400).json({ message: 'File URL required' });
+    }
+    
+    // Extract key from S3 URL
+    const url = new URL(fileUrl);
+    const key = url.pathname.substring(1); // Remove leading slash
+    
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME || 'jyoti-onlie-course',
+      Key: key
+    });
+    
+    await s3Client.send(command);
+    
+    res.json({
+      status: 'success',
+      message: 'File deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete file error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+});
+
 // Test S3 connection
 router.get('/test-s3', authenticateToken, restrictTo('admin'), async (req, res) => {
   try {
