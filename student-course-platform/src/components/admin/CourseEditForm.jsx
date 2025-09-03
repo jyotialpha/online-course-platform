@@ -76,33 +76,82 @@ function CourseEditForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Prepare payload
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Get current course data to preserve existing files
+      const currentCourseRes = await fetch(`${API_BASE_URL}/api/admin/courses/${courseId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const currentCourse = currentCourseRes.ok ? (await currentCourseRes.json()).data.course : null;
+
+      // Upload new thumbnail if exists, otherwise keep existing
+      let thumbnailUrl = currentCourse?.thumbnail;
+      if (formData.thumbnail) {
+        const thumbnailFormData = new FormData();
+        thumbnailFormData.append('thumbnail', formData.thumbnail);
+        
+        const thumbnailRes = await fetch(`${API_BASE_URL}/api/upload/thumbnail`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: thumbnailFormData
+        });
+        
+        if (thumbnailRes.ok) {
+          const thumbnailData = await thumbnailRes.json();
+          thumbnailUrl = thumbnailData.data.url;
+        }
+      }
+
+      // Upload new PDFs and prepare chapters
+      const processedChapters = await Promise.all(
+        formData.chapters.map(async (ch, index) => {
+          // Keep existing PDF URL if no new file uploaded
+          let pdfUrl = currentCourse?.chapters?.[index]?.pdf || null;
+          
+          // If it's a new file (File object), upload it
+          if (ch.pdf && typeof ch.pdf === 'object' && ch.pdf.name) {
+            const pdfFormData = new FormData();
+            pdfFormData.append('pdf', ch.pdf);
+            
+            const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: pdfFormData
+            });
+            
+            if (pdfRes.ok) {
+              const pdfData = await pdfRes.json();
+              pdfUrl = pdfData.data.url;
+            }
+          }
+          
+          return {
+            title: ch.title,
+            description: ch.description,
+            pdf: pdfUrl,
+            questions: ch.questions.map(q => ({
+              question: q.question,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation
+            }))
+          };
+        })
+      );
+
+      // Prepare final payload
       const payload = {
         title: formData.title,
         description: formData.description,
         price: Number(formData.price),
-        thumbnail: null,
-        chapters: formData.chapters.map(ch => ({
-          title: ch.title,
-          description: ch.description,
-          pdf: null,
-          questions: ch.questions.map(q => ({
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-            explanation: q.explanation
-          }))
-        }))
+        thumbnail: thumbnailUrl,
+        chapters: processedChapters
       };
 
       console.log('Update Payload:', payload);
-
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
 
       const res = await fetch(`${API_BASE_URL}/api/admin/courses/${courseId}`, {
         method: 'PUT',
@@ -394,6 +443,63 @@ function CourseEditForm() {
                     <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   </div>
                 </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Course Thumbnail
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <label className="cursor-pointer bg-white py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <span className="flex items-center">
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Choose New Image
+                        </span>
+                        <input
+                          type="file"
+                          id="thumbnail"
+                          name="thumbnail"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => handleThumbnailUpload(e.target.files[0])}
+                        />
+                      </label>
+                      {formData.thumbnail && (
+                        <span className="text-sm text-gray-600">
+                          {formData.thumbnail.name} ({(formData.thumbnail.size / 1024).toFixed(2)} KB)
+                        </span>
+                      )}
+                    </div>
+                    
+                    {formData.thumbnail && (
+                      <div className="flex items-center space-x-3">
+                        <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                          <img
+                            src={URL.createObjectURL(formData.thumbnail)}
+                            alt="Course thumbnail preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600">
+                            <strong>New File:</strong> {formData.thumbnail.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <strong>Size:</strong> {(formData.thumbnail.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleThumbnailUpload(null)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Remove new thumbnail"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -464,6 +570,45 @@ function CourseEditForm() {
                       placeholder="Chapter description"
                       required
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Chapter PDF</label>
+                    <div className="space-y-3">
+                      {chapter.pdf && typeof chapter.pdf === 'string' && (
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <FileText className="h-6 w-6 text-red-600 mr-2" />
+                              <span className="text-sm text-gray-700">Current PDF</span>
+                            </div>
+                            <a
+                              href={chapter.pdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              View Current
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-4">
+                        <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                          <span>Choose New PDF</span>
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            className="sr-only"
+                            onChange={(e) => handleFileUpload(chapterIndex, e.target.files[0])}
+                          />
+                        </label>
+                        {chapter.pdf && typeof chapter.pdf === 'object' && (
+                          <span className="text-sm text-gray-600">
+                            New: {chapter.pdf.name} ({(chapter.pdf.size / 1024).toFixed(2)} KB)
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Questions Section */}

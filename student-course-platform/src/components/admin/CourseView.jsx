@@ -180,6 +180,18 @@ function CourseView() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <p className="text-gray-900">{course.description}</p>
             </div>
+            {course.thumbnail && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course Thumbnail</label>
+                <div className="mt-2">
+                  <img
+                    src={course.thumbnail}
+                    alt="Course thumbnail"
+                    className="w-48 h-36 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -218,6 +230,32 @@ function CourseView() {
 
                   {expandedChapters[chapterIndex] && (
                     <div className="p-4 border-t border-gray-200">
+                      {/* Chapter PDF */}
+                      {chapter.pdf && (
+                        <div className="mb-6">
+                          <h4 className="font-medium text-gray-900 mb-3">Chapter PDF</h4>
+                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <FileText className="h-8 w-8 text-red-600 mr-3" />
+                                <div>
+                                  <p className="font-medium text-gray-900">Chapter PDF</p>
+                                  <p className="text-sm text-gray-600">Click to view or download</p>
+                                </div>
+                              </div>
+                              <a
+                                href={chapter.pdf}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Chapter Questions */}
                       <div className="space-y-4">
                         <h4 className="font-medium text-gray-900">Questions</h4>
