@@ -49,33 +49,85 @@ function CourseForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Prepare payload
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Upload thumbnail if exists
+      let thumbnailUrl = null;
+      if (formData.thumbnail) {
+        console.log('Uploading thumbnail:', formData.thumbnail.name);
+        const thumbnailFormData = new FormData();
+        thumbnailFormData.append('thumbnail', formData.thumbnail);
+        
+        const thumbnailRes = await fetch(`${API_BASE_URL}/api/upload/thumbnail`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: thumbnailFormData
+        });
+        
+        console.log('Thumbnail response status:', thumbnailRes.status);
+        if (thumbnailRes.ok) {
+          const thumbnailData = await thumbnailRes.json();
+          thumbnailUrl = thumbnailData.data.url;
+          console.log('Thumbnail uploaded to:', thumbnailUrl);
+        } else {
+          const errorData = await thumbnailRes.json();
+          console.error('Thumbnail upload failed:', errorData);
+        }
+      }
+
+      // Upload PDFs and prepare chapters
+      const processedChapters = await Promise.all(
+        formData.chapters.map(async (ch) => {
+          let pdfUrl = null;
+          if (ch.pdf) {
+            console.log('Uploading PDF:', ch.pdf.name);
+            const pdfFormData = new FormData();
+            pdfFormData.append('pdf', ch.pdf);
+            
+            const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: pdfFormData
+            });
+            
+            console.log('PDF response status:', pdfRes.status);
+            if (pdfRes.ok) {
+              const pdfData = await pdfRes.json();
+              pdfUrl = pdfData.data.url;
+              console.log('PDF uploaded to:', pdfUrl);
+            } else {
+              const errorData = await pdfRes.json();
+              console.error('PDF upload failed:', errorData);
+            }
+          }
+          
+          return {
+            title: ch.title,
+            description: ch.description,
+            pdf: pdfUrl,
+            questions: ch.questions.map(q => ({
+              question: q.question,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation
+            }))
+          };
+        })
+      );
+
+      // Prepare final payload
       const payload = {
         title: formData.title,
         description: formData.description,
         price: Number(formData.price),
-        thumbnail: null,
-        chapters: formData.chapters.map(ch => ({
-          title: ch.title,
-          description: ch.description,
-          pdf: null,
-          questions: ch.questions.map(q => ({
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-            explanation: q.explanation
-          }))
-        }))
+        thumbnail: thumbnailUrl,
+        chapters: processedChapters
       };
 
       console.log('Payload:', payload);
-
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
 
       const res = await fetch(`${API_BASE_URL}/api/admin/courses`, {
         method: 'POST',

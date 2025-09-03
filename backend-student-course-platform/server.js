@@ -13,6 +13,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
 const adminCoursesRoutes = require('./routes/adminCourses');
+const uploadRoutes = require('./routes/upload');
 
 // Utils
 const connectDB = require('./config/db');
@@ -62,6 +63,7 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 app.use('/api/admin', adminCoursesRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.879.0",
     "bcrypt": "^6.0.0",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.7",
@@ -23,6 +24,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.0",
+    "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0"
   },
