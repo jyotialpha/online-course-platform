@@ -27,7 +27,7 @@ class CourseController {
 
   async deleteCourse(req, res, next) {
     try {
-      await courseService.deleteCourse(req.params.courseId);
+      await courseService.deleteCourseWithFiles(req.params.courseId);
       res.status(204).send();
     } catch (error) {
       next(error);

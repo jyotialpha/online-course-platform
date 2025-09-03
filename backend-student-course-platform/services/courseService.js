@@ -15,6 +15,64 @@ class CourseService {
     return await courseRepository.delete(courseId);
   }
 
+  async deleteCourseWithFiles(courseId) {
+    try {
+      // Get course data first to delete associated files
+      const course = await courseRepository.getById(courseId);
+      
+      // Delete course from database
+      await courseRepository.delete(courseId);
+      
+      // Delete associated files from S3
+      await this.deleteAssociatedFiles(course);
+      
+      return course;
+    } catch (error) {
+      throw new Error(`Error deleting course with files: ${error.message}`);
+    }
+  }
+
+  async deleteAssociatedFiles(course) {
+    try {
+      const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+      const { s3Client } = require('../config/s3');
+      
+      const filesToDelete = [];
+      
+      // Add thumbnail to deletion list
+      if (course.thumbnail) {
+        const url = new URL(course.thumbnail);
+        filesToDelete.push(url.pathname.substring(1));
+      }
+      
+      // Add chapter PDFs to deletion list
+      if (course.chapters) {
+        course.chapters.forEach(chapter => {
+          if (chapter.pdf) {
+            const url = new URL(chapter.pdf);
+            filesToDelete.push(url.pathname.substring(1));
+          }
+        });
+      }
+      
+      // Delete all files from S3
+      for (const key of filesToDelete) {
+        try {
+          const command = new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME || 'jyoti-onlie-course',
+            Key: key
+          });
+          await s3Client.send(command);
+          console.log(`Deleted file from S3: ${key}`);
+        } catch (error) {
+          console.error(`Failed to delete file ${key}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting associated files:', error);
+    }
+  }
+
   async getCourse(courseId) {
     return await courseRepository.getById(courseId);
   }
