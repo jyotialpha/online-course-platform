@@ -66,17 +66,17 @@ function StudentCourses() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4">
+          <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4">
             Available Courses
           </h1>
-          <p className="text-gray-300 text-lg">Discover and enroll in courses to start your learning journey</p>
+          <p className="text-gray-300 text-sm lg:text-lg">Discover and enroll in courses to start your learning journey</p>
         </motion.div>
 
         {message && (
@@ -93,7 +93,7 @@ function StudentCourses() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {courses.map((course, index) => (
             <motion.div
               key={course._id}

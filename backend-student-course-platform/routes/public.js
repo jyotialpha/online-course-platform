@@ -6,13 +6,13 @@ const router = express.Router();
 // Get public courses for homepage
 router.get('/courses', async (req, res, next) => {
   try {
-    console.log('Public courses endpoint hit');
+    // console.log('Public courses endpoint hit');
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 6;
     const skip = (page - 1) * limit;
     
     const courses = await courseService.getCoursesWithPagination({}, { createdAt: -1 }, skip, limit);
-    console.log('Public courses found:', courses.length);
+    // console.log('Public courses found:', courses.length);
     
     // Ensure all courses have isFree field
     const coursesWithIsFree = courses.map(course => {

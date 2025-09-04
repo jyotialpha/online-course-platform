@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/AuthContext';
+import { SidebarProvider, useSidebar } from './context/SidebarContext';
 import Navbar from './components/common/Navbar';
 import Sidebar from './components/common/Sidebar';
 import Footer from './components/common/Footer';
@@ -19,6 +20,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 
 function AppContent() {
   const { user } = useAuth();
+  const { isOpen } = useSidebar();
   const location = useLocation();
 
   // Debug logs to check state
@@ -31,9 +33,9 @@ function AppContent() {
   // console.log('Show Sidebar:', showSidebar);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-100">
       {showSidebar && <Sidebar />}
-      <div className="flex flex-col flex-grow">
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${showSidebar ? (isOpen ? 'lg:ml-64' : 'lg:ml-16') : ''}`}>
         <Navbar />
         <main className="flex-grow">
           <Routes>
@@ -122,9 +124,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <SidebarProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </SidebarProvider>
     </AuthProvider>
   );
 }

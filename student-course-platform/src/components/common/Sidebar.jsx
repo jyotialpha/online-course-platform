@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSidebar } from '../../context/SidebarContext';
 import { LayoutDashboard, BookOpen, FileText, FileQuestion, LogOut, PlusCircle, FileUp } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const { isOpen, setIsOpen, isMobileOpen, setIsMobileOpen } = useSidebar();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = React.useState(true);
 
   const handleLogout = () => {
     logout();
@@ -51,11 +52,25 @@ const Sidebar = () => {
     : [];
 
   return (
-    <div
-      className={`bg-blue-800 text-white h-screen flex flex-col transition-all duration-300 ${
-        isOpen ? 'w-64' : 'w-16'
-      } md:block hidden`}
-    >
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-blue-800 text-white rounded-md"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed left-0 top-0 z-40 bg-blue-800 text-white h-screen flex flex-col transition-all duration-300 ${
+          isOpen ? 'w-64' : 'w-16'
+        } lg:block ${
+          isMobileOpen ? 'block' : 'hidden'
+        }`}
+      >
       <div className="p-4 flex items-center justify-between">
         {isOpen && <h2 className="text-xl font-bold">{user.role === 'admin' ? 'Admin Menu' : 'Student Menu'}</h2>}
         <button
@@ -73,7 +88,7 @@ const Sidebar = () => {
         </button>
       </div>
       {user.isAuthenticated && (
-        <nav className="flex-grow p-4">
+        <nav className="flex-grow p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.path}>
@@ -102,7 +117,16 @@ const Sidebar = () => {
           </ul>
         </nav>
       )}
-    </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-30 bg-black bg-opacity-50"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

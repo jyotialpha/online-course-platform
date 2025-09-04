@@ -54,7 +54,7 @@ function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
         <motion.div
@@ -63,20 +63,20 @@ function StudentDashboard() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-2xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-2xl flex items-center justify-center">
+              <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
                 Welcome back, {user.name}!
               </h1>
-              <p className="text-gray-300 text-lg">Continue your learning journey</p>
+              <p className="text-gray-300 text-sm lg:text-lg">Continue your learning journey</p>
             </div>
           </div>
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -137,7 +137,7 @@ function StudentDashboard() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8"
         >
           <Link
             to="/student/courses"
@@ -180,7 +180,7 @@ function StudentDashboard() {
             transition={{ delay: 0.5 }}
           >
             <h2 className="text-2xl font-bold text-white mb-6">Continue Learning</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
               {recentCourses.map((course, index) => (
                 <div
                   key={course._id}
