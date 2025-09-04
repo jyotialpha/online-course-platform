@@ -136,4 +136,73 @@ router.get('/protected/student/my-courses', authenticateToken, restrictTo('stude
   }
 });
 
+// Get specific enrolled course for learning
+router.get('/protected/student/course/:courseId', authenticateToken, restrictTo('student'), async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user.id;
+    
+    // Check if user is enrolled
+    const user = await User.findById(userId);
+    const isEnrolled = user.enrolledCourses.some(enrollment => 
+      enrollment.courseId.toString() === courseId
+    );
+    
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+    
+    // Get course details
+    const course = await courseService.getCourse(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    res.json({
+      status: 'success',
+      data: { course }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get chapter content (PDF + questions)
+router.get('/protected/student/course/:courseId/chapter/:chapterIndex', authenticateToken, restrictTo('student'), async (req, res, next) => {
+  try {
+    const { courseId, chapterIndex } = req.params;
+    const userId = req.user.id;
+    
+    // Check enrollment
+    const user = await User.findById(userId);
+    const isEnrolled = user.enrolledCourses.some(enrollment => 
+      enrollment.courseId.toString() === courseId
+    );
+    
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+    
+    // Get course and chapter
+    const course = await courseService.getCourse(courseId);
+    const chapter = course.chapters[parseInt(chapterIndex)];
+    
+    if (!chapter) {
+      return res.status(404).json({ message: 'Chapter not found' });
+    }
+    
+    res.json({
+      status: 'success',
+      data: { 
+        chapter,
+        courseTitle: course.title,
+        chapterIndex: parseInt(chapterIndex),
+        totalChapters: course.chapters.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

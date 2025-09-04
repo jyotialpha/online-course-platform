@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Award, TrendingUp, Clock, ArrowRight, Sparkles, Play, Calendar, CheckCircle, Star, BarChart3 } from 'lucide-react';
@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config/api';
 
 function StudentDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ totalCourses: 0, enrolledCourses: 0 });
   const [recentCourses, setRecentCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -288,7 +289,10 @@ function StudentDashboard() {
                     </div>
                     
                     {/* Action Button */}
-                    <button className="w-full px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center gap-2 text-sm group-hover:shadow-lg group-hover:shadow-cyan-500/25">
+                    <button 
+                      onClick={() => navigate(`/student/course/${course._id}`)}
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center gap-2 text-sm group-hover:shadow-lg group-hover:shadow-cyan-500/25"
+                    >
                       <Play className="w-4 h-4" />
                       Continue Learning
                     </button>

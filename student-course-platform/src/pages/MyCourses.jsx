@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Clock, Play, Award, Search, Filter, BarChart3, Calendar, CheckCircle, Star } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 function MyCourses() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -229,7 +231,10 @@ function MyCourses() {
                 </div>
                 
                 {/* Action Button */}
-                <button className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-cyan-500/25">
+                <button 
+                  onClick={() => navigate(`/student/course/${course._id}`)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-cyan-500/25"
+                >
                   <Play className="w-4 h-4" />
                   Continue Learning
                 </button>

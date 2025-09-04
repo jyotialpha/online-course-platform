@@ -9,6 +9,8 @@ import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentCourses from './pages/StudentCourses';
 import MyCourses from './pages/MyCourses';
+import CourseLearning from './pages/CourseLearning';
+import MockTest from './pages/MockTest';
 import AdminDashboard from './pages/AdminDashboard';
 import CourseForm from './components/admin/CourseForm';
 import CourseEditForm from './components/admin/CourseEditForm';
@@ -61,6 +63,22 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <MyCourses />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/student/course/:courseId" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <CourseLearning />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/student/course/:courseId/chapter/:chapterIndex/test" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <MockTest />
                 </ProtectedRoute>
               }
             />
