@@ -125,6 +125,11 @@ class CourseService {
       }
     }
 
+    // Set isFree based on price if not explicitly provided
+    if (courseData.isFree === undefined) {
+      courseData.isFree = !courseData.price || courseData.price === 0;
+    }
+
     if (!isUpdate || chapters !== undefined) {
       if (!Array.isArray(chapters) || chapters.length === 0) {
         throw new Error('At least one chapter is required');

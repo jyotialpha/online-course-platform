@@ -21,12 +21,22 @@ router.get('/student', authenticateToken, restrictTo('student', 'admin'), (req, 
 // Get all courses for students
 router.get('/protected/student/courses', authenticateToken, restrictTo('student'), async (req, res, next) => {
   try {
-    console.log('Student courses endpoint hit');
+    // console.log('Student courses endpoint hit');
     const courses = await courseService.getCoursesWithPagination({}, { createdAt: -1 }, 0, 50);
-    console.log('Courses found:', courses.length);
+    // console.log('Courses found:', courses.length);
+    
+    // Ensure all courses have isFree field
+    const coursesWithIsFree = courses.map(course => {
+      const courseObj = course.toObject ? course.toObject() : course;
+      if (courseObj.isFree === undefined) {
+        courseObj.isFree = courseObj.price === 0;
+      }
+      return courseObj;
+    });
+    
     res.json({
       status: 'success',
-      data: { courses }
+      data: { courses: coursesWithIsFree }
     });
   } catch (error) {
     console.error('Error in student courses:', error);
@@ -61,12 +71,21 @@ router.post('/protected/student/enroll/:courseId', authenticateToken, restrictTo
       return res.status(404).json({ message: 'Course not found' });
     }
     
-    // Add enrollment
+    // Check if course is paid
+    if (!course.isFree && course.price > 0) {
+      return res.status(400).json({ 
+        message: 'This is a paid course. Payment required to enroll.',
+        requiresPayment: true,
+        price: course.price
+      });
+    }
+    
+    // Add enrollment for free courses
     user.enrolledCourses.push({
       courseId: courseId,
       enrolledAt: new Date(),
       status: 'enrolled',
-      amount: 0 // Free enrollment for now
+      amount: 0
     });
     
     await user.save();

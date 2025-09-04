@@ -22,6 +22,7 @@ function CourseForm() {
     title: '',
     description: '',
     price: '',
+    isFree: true,
     thumbnail: null,
     chapters: [
       {
@@ -122,7 +123,8 @@ function CourseForm() {
       const payload = {
         title: formData.title,
         description: formData.description,
-        price: Number(formData.price),
+        price: formData.isFree ? 0 : Number(formData.price),
+        isFree: formData.isFree,
         thumbnail: thumbnailUrl,
         chapters: processedChapters
       };
@@ -341,24 +343,49 @@ function CourseForm() {
                   </div>
                 </div>
                 <div className="relative">
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
-                    Price (₹)
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Course Pricing
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="price"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="courseType"
+                          checked={formData.isFree}
+                          onChange={() => setFormData(prev => ({ ...prev, isFree: true, price: '0' }))}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Free Course</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="courseType"
+                          checked={!formData.isFree}
+                          onChange={() => setFormData(prev => ({ ...prev, isFree: false, price: '' }))}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Paid Course</span>
+                      </label>
+                    </div>
+                    {!formData.isFree && (
+                      <div className="relative">
+                        <input
+                          type="number"
+                          id="price"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleChange}
+                          className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                          placeholder="Enter price in ₹"
+                          min="1"
+                          step="0.01"
+                          required
+                        />
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="md:col-span-2">

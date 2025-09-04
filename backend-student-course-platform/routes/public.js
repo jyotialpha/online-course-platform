@@ -14,10 +14,20 @@ router.get('/courses', async (req, res, next) => {
     const courses = await courseService.getCoursesWithPagination({}, { createdAt: -1 }, skip, limit);
     console.log('Public courses found:', courses.length);
     
+    // Ensure all courses have isFree field
+    const coursesWithIsFree = courses.map(course => {
+      const courseObj = course.toObject ? course.toObject() : course;
+      if (courseObj.isFree === undefined) {
+        courseObj.isFree = courseObj.price === 0;
+      }
+      // console.log(`Course ${courseObj.title}: price=${courseObj.price}, isFree=${courseObj.isFree}`);
+      return courseObj;
+    });
+    
     res.json({
       status: 'success',
-      results: courses.length,
-      data: { courses }
+      results: coursesWithIsFree.length,
+      data: { courses: coursesWithIsFree }
     });
   } catch (error) {
     console.error('Error in public courses:', error);

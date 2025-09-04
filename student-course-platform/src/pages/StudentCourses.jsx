@@ -18,6 +18,7 @@ function StudentCourses() {
       const response = await fetch(`${API_BASE_URL}/api/public/courses?limit=50`);
       if (response.ok) {
         const data = await response.json();
+        // console.log('Fetched courses:', data.data.courses);
         setCourses(data.data.courses);
       }
     } catch (error) {
@@ -41,8 +42,12 @@ function StudentCourses() {
         setMessage('Successfully enrolled in course!');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage(data.message || 'Enrollment failed');
-        setTimeout(() => setMessage(''), 3000);
+        if (data.requiresPayment) {
+          setMessage(`This course costs ₹${data.price}. Payment integration coming soon!`);
+        } else {
+          setMessage(data.message || 'Enrollment failed');
+        }
+        setTimeout(() => setMessage(''), 5000);
       }
     } catch (error) {
       setMessage('Enrollment failed');
@@ -133,14 +138,14 @@ function StudentCourses() {
                 
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                    ₹{course.price}
+                    {(course.isFree === true || course.price === 0) ? 'Free' : `₹${course.price}`}
                   </span>
                   <button
                     onClick={() => handleEnroll(course._id)}
                     disabled={enrolling === course._id}
                     className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl disabled:opacity-50"
                   >
-                    {enrolling === course._id ? 'Enrolling...' : 'Enroll Now'}
+                    {enrolling === course._id ? 'Enrolling...' : (course.isFree === true || course.price === 0) ? 'Enroll Free' : 'Buy Now'}
                   </button>
                 </div>
               </div>
