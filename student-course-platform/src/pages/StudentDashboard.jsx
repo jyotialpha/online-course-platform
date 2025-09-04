@@ -55,7 +55,7 @@ function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4 lg:p-6">
+    <div className="min-h-screen bg-gray-900 pt-20 lg:pt-6 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
         <motion.div
