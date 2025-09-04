@@ -22,7 +22,6 @@ function CourseForm() {
     title: '',
     description: '',
     price: '',
-    isFree: true,
     thumbnail: null,
     chapters: [
       {
@@ -50,86 +49,33 @@ function CourseForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-
-      // Upload thumbnail if exists
-      let thumbnailUrl = null;
-      if (formData.thumbnail) {
-        console.log('Uploading thumbnail:', formData.thumbnail.name);
-        const thumbnailFormData = new FormData();
-        thumbnailFormData.append('thumbnail', formData.thumbnail);
-        
-        const thumbnailRes = await fetch(`${API_BASE_URL}/api/upload/thumbnail`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: thumbnailFormData
-        });
-        
-        console.log('Thumbnail response status:', thumbnailRes.status);
-        if (thumbnailRes.ok) {
-          const thumbnailData = await thumbnailRes.json();
-          thumbnailUrl = thumbnailData.data.url;
-          console.log('Thumbnail uploaded to:', thumbnailUrl);
-        } else {
-          const errorData = await thumbnailRes.json();
-          console.error('Thumbnail upload failed:', errorData);
-        }
-      }
-
-      // Upload PDFs and prepare chapters
-      const processedChapters = await Promise.all(
-        formData.chapters.map(async (ch) => {
-          let pdfUrl = null;
-          if (ch.pdf) {
-            console.log('Uploading PDF:', ch.pdf.name);
-            const pdfFormData = new FormData();
-            pdfFormData.append('pdf', ch.pdf);
-            
-            const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: pdfFormData
-            });
-            
-            console.log('PDF response status:', pdfRes.status);
-            if (pdfRes.ok) {
-              const pdfData = await pdfRes.json();
-              pdfUrl = pdfData.data.url;
-              console.log('PDF uploaded to:', pdfUrl);
-            } else {
-              const errorData = await pdfRes.json();
-              console.error('PDF upload failed:', errorData);
-            }
-          }
-          
-          return {
-            title: ch.title,
-            description: ch.description,
-            pdf: pdfUrl,
-            questions: ch.questions.map(q => ({
-              question: q.question,
-              options: q.options,
-              correctAnswer: q.correctAnswer,
-              explanation: q.explanation
-            }))
-          };
-        })
-      );
-
-      // Prepare final payload
+      // Prepare payload
       const payload = {
         title: formData.title,
         description: formData.description,
-        price: formData.isFree ? 0 : Number(formData.price),
-        isFree: formData.isFree,
-        thumbnail: thumbnailUrl,
-        chapters: processedChapters
+        price: Number(formData.price),
+        thumbnail: null,
+        chapters: formData.chapters.map(ch => ({
+          title: ch.title,
+          description: ch.description,
+          pdf: null,
+          questions: ch.questions.map(q => ({
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation
+          }))
+        }))
       };
 
       console.log('Payload:', payload);
+
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/admin/courses`, {
         method: 'POST',
@@ -343,49 +289,24 @@ function CourseForm() {
                   </div>
                 </div>
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Course Pricing
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+                    Price (₹)
                   </label>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="courseType"
-                          checked={formData.isFree}
-                          onChange={() => setFormData(prev => ({ ...prev, isFree: true, price: '0' }))}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">Free Course</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="courseType"
-                          checked={!formData.isFree}
-                          onChange={() => setFormData(prev => ({ ...prev, isFree: false, price: '' }))}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">Paid Course</span>
-                      </label>
-                    </div>
-                    {!formData.isFree && (
-                      <div className="relative">
-                        <input
-                          type="number"
-                          id="price"
-                          name="price"
-                          value={formData.price}
-                          onChange={handleChange}
-                          className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
-                          placeholder="Enter price in ₹"
-                          min="1"
-                          step="0.01"
-                          required
-                        />
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      </div>
-                    )}
+                  <div className="relative">
+                    <input
+                      type="number"
+                      id="price"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-blue-200"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
                 </div>
                 <div className="md:col-span-2">

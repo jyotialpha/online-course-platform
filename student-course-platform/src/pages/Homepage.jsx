@@ -155,18 +155,12 @@ const CourseCard = ({ course, delay }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
-  const getLevelColor = (chapters) => {
-    const chapterCount = chapters?.length || 0;
-    if (chapterCount <= 2) return 'bg-green-500';
-    if (chapterCount <= 5) return 'bg-yellow-500';
-    return 'bg-red-500';
+  const getPriceColor = (course) => {
+    return (course.isFree === true || course.price === 0) ? 'bg-green-500' : 'bg-blue-500';
   };
 
-  const getLevelText = (chapters) => {
-    const chapterCount = chapters?.length || 0;
-    if (chapterCount <= 2) return 'Beginner';
-    if (chapterCount <= 5) return 'Intermediate';
-    return 'Advanced';
+  const getPriceText = (course) => {
+    return (course.isFree === true || course.price === 0) ? 'Free' : 'Paid';
   };
 
   const getQuestionCount = (chapters) => {
@@ -206,8 +200,8 @@ const CourseCard = ({ course, delay }) => {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute top-4 left-4 flex gap-2">
-          <div className={`${getLevelColor(course.chapters)} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
-            {getLevelText(course.chapters)}
+          <div className={`${getPriceColor(course)} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
+            {getPriceText(course)}
           </div>
         </div>
         <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg">
@@ -253,9 +247,9 @@ const CourseCard = ({ course, delay }) => {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              ₹{course.price}
+              {(course.isFree === true || course.price === 0) ? 'Free' : `₹${course.price}`}
             </span>
-            <span className="text-xs text-gray-400">one-time payment</span>
+            <span className="text-xs text-gray-400">{(course.isFree === true || course.price === 0) ? 'no cost' : 'one-time payment'}</span>
           </div>
           <Link
             to={user.isAuthenticated ? `/student/courses` : `/login`}
@@ -651,7 +645,7 @@ function Homepage() {
                           <p className="text-gray-300 text-sm mb-4 line-clamp-2">{course.description}</p>
                           <div className="flex items-center justify-between">
                             <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                              ₹{course.price}
+                              {(course.isFree === true || course.price === 0) ? 'Free' : `₹${course.price}`}
                             </span>
                             <Link
                               to={user.isAuthenticated ? `/student/courses` : `/login`}
