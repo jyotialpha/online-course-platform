@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Clock, CheckCircle, Users, Search, Filter, Star, Award, TrendingUp } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import Swal from 'sweetalert2';
 
 function StudentCourses() {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(null);
-  const [message, setMessage] = useState('');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // all, free, paid
 
@@ -63,19 +64,40 @@ function StudentCourses() {
       const data = await response.json();
       
       if (response.ok) {
-        setMessage('Successfully enrolled in course!');
-        setTimeout(() => setMessage(''), 3000);
+        Swal.fire({
+          title: 'Success!',
+          text: 'Successfully enrolled in course!',
+          icon: 'success',
+          confirmButtonText: 'Great!',
+          confirmButtonColor: '#10b981'
+        });
       } else {
         if (data.requiresPayment) {
-          setMessage(`This course costs ₹${data.price}. Payment integration coming soon!`);
+          Swal.fire({
+            title: 'Payment Required',
+            text: `This course costs ₹${data.price}. Payment integration coming soon!`,
+            icon: 'info',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3b82f6'
+          });
         } else {
-          setMessage(data.message || 'Enrollment failed');
+          Swal.fire({
+            title: 'Enrollment Failed',
+            text: data.message || 'Unable to enroll in course',
+            icon: 'error',
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#ef4444'
+          });
         }
-        setTimeout(() => setMessage(''), 5000);
       }
     } catch (error) {
-      setMessage('Enrollment failed');
-      setTimeout(() => setMessage(''), 3000);
+      Swal.fire({
+        title: 'Error',
+        text: 'Enrollment failed. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setEnrolling(null);
     }
@@ -178,19 +200,7 @@ function StudentCourses() {
           </div>
         </motion.div>
 
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`mb-6 p-4 rounded-lg ${
-              message.includes('Error') || message.includes('failed') 
-                ? 'bg-red-500/20 border border-red-500/30 text-red-400'
-                : 'bg-green-500/20 border border-green-500/30 text-green-400'
-            }`}
-          >
-            {message}
-          </motion.div>
-        )}
+
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course, index) => (
