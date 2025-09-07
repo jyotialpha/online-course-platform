@@ -114,21 +114,22 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
   return (
     <div className={`bg-gray-800 rounded-xl overflow-hidden ${className}`}>
       {/* Controls */}
-      <div className="flex items-center justify-between p-3 bg-gray-700 border-b border-gray-600">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-center gap-2 p-2 sm:p-3 bg-gray-700 border-b border-gray-600">
+        {/* Page Navigation */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <button
             onClick={() => goToPage(1)}
             disabled={currentPage <= 1}
-            className="px-3 py-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white text-xs"
+            className="px-2 sm:px-3 py-1 sm:py-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white text-xs"
           >
             First
           </button>
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="p-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="p-1 sm:p-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded"
           >
-            <ChevronUp className="w-4 h-4 text-white" />
+            <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           </button>
           <div className="flex items-center gap-1">
             <input
@@ -142,27 +143,28 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
                   goToPage(page);
                 }
               }}
-              className="w-12 px-2 py-1 bg-gray-600 text-white text-center text-sm rounded border-none outline-none"
+              className="w-10 sm:w-12 px-1 sm:px-2 py-1 bg-gray-600 text-white text-center text-xs sm:text-sm rounded border-none outline-none"
             />
-            <span className="text-white text-sm">/ {totalPages}</span>
+            <span className="text-white text-xs sm:text-sm">/ {totalPages}</span>
           </div>
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="p-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="p-1 sm:p-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded"
           >
-            <ChevronDown className="w-4 h-4 text-white" />
+            <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           </button>
           <button
             onClick={() => goToPage(totalPages)}
             disabled={currentPage >= totalPages}
-            className="px-3 py-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white text-xs"
+            className="px-2 sm:px-3 py-1 sm:py-2 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white text-xs"
           >
             Last
           </button>
         </div>
         
-        <div className="flex items-center gap-2">
+        {/* Controls */}
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1 bg-gray-600 rounded p-1">
             <button onClick={scrollUp} className="p-1 hover:bg-gray-500 rounded" title="Scroll Up">
               <ArrowUp className="w-3 h-3 text-white" />
@@ -175,7 +177,7 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
             <button onClick={zoomOut} className="p-1 hover:bg-gray-500 rounded">
               <ZoomOut className="w-3 h-3 text-white" />
             </button>
-            <span className="text-white text-xs px-2">{Math.round(scale * 100)}%</span>
+            <span className="text-white text-xs px-1 sm:px-2">{Math.round(scale * 100)}%</span>
             <button onClick={zoomIn} className="p-1 hover:bg-gray-500 rounded">
               <ZoomIn className="w-3 h-3 text-white" />
             </button>

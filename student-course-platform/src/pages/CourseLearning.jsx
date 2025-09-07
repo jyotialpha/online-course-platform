@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, ZoomIn, ZoomOut, RotateCcw, Menu, X } from 'lucide-react';
+import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, Menu, X } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import SecurePDFViewer from '../components/student/SecurePDFViewer';
 
@@ -14,7 +14,7 @@ function CourseLearning() {
   const [error, setError] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState('desktop'); // desktop, mobile
-  const [zoomLevel, setZoomLevel] = useState(100);
+
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
@@ -229,34 +229,6 @@ function CourseLearning() {
                     
                     {course.chapters[currentChapter].pdf && (
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* Touch-friendly Zoom Controls */}
-                        <div className="flex items-center gap-1 bg-gray-700 rounded-lg p-1">
-                          <button
-                            onClick={() => setZoomLevel(Math.max(50, zoomLevel - 25))}
-                            className="p-3 lg:p-1 text-gray-400 hover:text-white transition-colors touch-manipulation"
-                            title="Zoom Out"
-                          >
-                            <ZoomOut className="w-5 h-5 lg:w-3 lg:h-3" />
-                          </button>
-                          <span className="text-sm lg:text-xs text-white px-3 lg:px-2 min-w-[60px] lg:min-w-[50px] text-center">
-                            {zoomLevel}%
-                          </span>
-                          <button
-                            onClick={() => setZoomLevel(Math.min(200, zoomLevel + 25))}
-                            className="p-3 lg:p-1 text-gray-400 hover:text-white transition-colors touch-manipulation"
-                            title="Zoom In"
-                          >
-                            <ZoomIn className="w-5 h-5 lg:w-3 lg:h-3" />
-                          </button>
-                          <button
-                            onClick={() => setZoomLevel(100)}
-                            className="p-3 lg:p-1 text-gray-400 hover:text-white transition-colors touch-manipulation"
-                            title="Reset Zoom"
-                          >
-                            <RotateCcw className="w-5 h-5 lg:w-3 lg:h-3" />
-                          </button>
-                        </div>
-                        
                         {/* View Mode Toggle - Hidden on mobile */}
                         <div className="hidden lg:flex bg-gray-700 rounded-lg p-1">
                           <button
