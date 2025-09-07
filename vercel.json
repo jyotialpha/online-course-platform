@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend-student-course-platform/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "student-course-platform/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend-student-course-platform/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "student-course-platform/build/$1"
+    }
+  ]
+}
