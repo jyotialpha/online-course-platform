@@ -355,6 +355,7 @@ const StatsSection = () => (
 
 function Homepage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [courses, setCourses] = useState([]);
@@ -407,11 +408,24 @@ function Homepage() {
       course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSearch = () => {
+    const featuredCoursesSection = document.getElementById('featured-courses');
+    if (featuredCoursesSection) {
+      featuredCoursesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
-        <AnimatedBackground />
+        {/* <AnimatedBackground /> */}
         <FloatingParticles />
         <motion.div
           className="relative z-10 text-center px-4 max-w-7xl mx-auto"
@@ -455,12 +469,14 @@ function Homepage() {
               placeholder="🚀 Search for your next breakthrough..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
               className="w-full p-8 text-xl bg-white/10 backdrop-blur-2xl border-2 border-white/20 rounded-3xl text-white placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all duration-500 shadow-2xl"
             />
             <motion.div
-              className="absolute right-8 top-1/2 transform -translate-y-1/2"
+              className="absolute right-8 top-1/2 transform -translate-y-1/2 cursor-pointer"
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
+              onClick={handleSearch}
             >
               <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <Zap className="w-6 h-6 text-white" />
@@ -508,7 +524,7 @@ function Homepage() {
               </span>
             </motion.button>
           </motion.div>
-          <motion.div
+          {/* <motion.div
             className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
@@ -523,7 +539,7 @@ function Homepage() {
                 />
               </div>
             </div>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
       </section>
 
@@ -531,7 +547,7 @@ function Homepage() {
       <StatsSection />
 
       {/* Featured Courses Section */}
-      <section className="py-24 relative">
+      <section id="featured-courses" className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent" />
         <div className="relative z-10 max-w-7xl mx-auto px-4">
           <motion.div
