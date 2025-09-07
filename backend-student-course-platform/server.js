@@ -67,6 +67,21 @@ app.use('/api/admin', adminCoursesRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/public', publicRoutes);
 
+// Root endpoint for backend
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Online Course Platform Backend API',
+    status: 'running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      courses: '/api/public/courses',
+      admin: '/api/admin'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
