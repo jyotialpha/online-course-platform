@@ -8,7 +8,7 @@
     {
       "src": "student-course-platform/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "build" }
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
@@ -18,7 +18,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "student-course-platform/build/$1"
+      "dest": "student-course-platform/dist/$1"
     }
   ]
 }
