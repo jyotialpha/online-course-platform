@@ -18,7 +18,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "student-course-platform/dist/$1"
+      "dest": "student-course-platform/dist/index.html"
     }
   ]
 }
