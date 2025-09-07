@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, ZoomIn, ZoomOut, RotateCcw, Menu, X } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import SecurePDFViewer from '../components/student/SecurePDFViewer';
 
 function CourseLearning() {
   const { courseId } = useParams();
@@ -293,39 +294,11 @@ function CourseLearning() {
                   </div>
                   
                   {course.chapters[currentChapter].pdf ? (
-                    <div className={`bg-gray-800 rounded-xl overflow-hidden ${
-                      isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[calc(100vh-200px)] lg:min-h-[400px]'
-                    }`}>
-                      <div className="w-full h-full flex justify-center overflow-auto touch-pan-y">
-                        <div 
-                          className="transition-transform duration-300 w-full"
-                          style={{ 
-                            transform: `scale(${zoomLevel / 100})`,
-                            transformOrigin: 'top center'
-                          }}
-                        >
-                          <iframe
-                            src={`${course.chapters[currentChapter].pdf}#toolbar=0&navpanes=0&scrollbar=0&zoom=page-fit&view=FitH`}
-                            className={`rounded-lg border-0 w-full ${
-                              isFullscreen 
-                                ? 'h-full' 
-                                : 'h-[calc(100vh-300px)] lg:h-96'
-                            }`}
-                            title={`Chapter ${currentChapter + 1} PDF`}
-                            style={{
-                              pointerEvents: 'auto'
-                            }}
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Overlay to prevent right-click download */}
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        onContextMenu={(e) => e.preventDefault()}
-                        style={{ zIndex: 1 }}
+                    <div>
+                      <SecurePDFViewer
+                        pdfUrl={`${API_BASE_URL}/api/protected/pdf-viewer/${courseId}/${currentChapter}?token=${localStorage.getItem('token')}`}
+                        className={isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[calc(100vh-200px)] lg:min-h-[400px]'}
                       />
-                      
                       <div className="p-2 lg:p-4 bg-gray-900/50 backdrop-blur-sm">
                         <div className="flex items-center justify-between">
                           <p className="text-gray-400 text-xs flex items-center gap-1">
@@ -333,8 +306,7 @@ function CourseLearning() {
                             <span className="hidden sm:inline">Protected content - </span>View only
                           </p>
                           <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <span>{zoomLevel}%</span>
-                            <span>{currentChapter + 1}/{course?.chapters?.length}</span>
+                            <span>Chapter {currentChapter + 1}/{course?.chapters?.length}</span>
                           </div>
                         </div>
                       </div>

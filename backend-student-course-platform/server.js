@@ -35,7 +35,13 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      frameAncestors: ["'self'", "http://localhost:5173", "https://*.vercel.app"]
+    }
+  }
+}));
 
 //local development
 // app.use(cors({

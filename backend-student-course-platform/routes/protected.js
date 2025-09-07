@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticateToken, restrictTo } = require('../middleware/auth');
 const courseService = require('../services/courseService');
 const User = require('../models/User');
+const axios = require('axios');
 const router = express.Router();
 
 router.get('/admin', authenticateToken, restrictTo('admin'), (req, res) => {
@@ -201,6 +202,65 @@ router.get('/protected/student/course/:courseId/chapter/:chapterIndex', authenti
       }
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// Watermarked PDF viewer endpoint
+router.get('/protected/pdf-viewer/:courseId/:chapterIndex', async (req, res, next) => {
+  try {
+    const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    
+    if (req.user.role !== 'student' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const { courseId, chapterIndex } = req.params;
+    const userId = req.user.id;
+    
+    const user = await User.findById(userId);
+    const isEnrolled = user.enrolledCourses.some(enrollment => 
+      enrollment.courseId.toString() === courseId
+    );
+    
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+    
+    const course = await courseService.getCourse(courseId);
+    const chapter = course.chapters[parseInt(chapterIndex)];
+    
+    if (!chapter || !chapter.pdf) {
+      return res.status(404).json({ message: 'PDF not found' });
+    }
+    
+    const response = await axios({
+      method: 'GET',
+      url: chapter.pdf,
+      responseType: 'stream'
+    });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="protected.pdf"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('PDF viewer error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
     next(error);
   }
 });
