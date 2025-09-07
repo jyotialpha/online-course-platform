@@ -70,13 +70,23 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     const container = canvas.parentElement;
+    const isMobile = window.innerWidth < 640;
     
-    // Calculate scale to fit container width
-    const containerWidth = container.clientWidth - 32; // Account for padding
-    const pageViewport = page.getViewport({ scale: 1 });
-    const calculatedScale = Math.min(scale, containerWidth / pageViewport.width);
+    let finalScale = scale;
     
-    const viewport = page.getViewport({ scale: calculatedScale });
+    if (isMobile) {
+      // On mobile, ensure minimum readability scale
+      const containerWidth = container.clientWidth - 16; // Less padding on mobile
+      const pageViewport = page.getViewport({ scale: 1 });
+      const fitScale = containerWidth / pageViewport.width;
+      
+      // Use fit scale if it's larger than current scale for better readability
+      if (scale < fitScale) {
+        finalScale = Math.min(fitScale, 2.0); // Cap at 2x for performance
+      }
+    }
+    
+    const viewport = page.getViewport({ scale: finalScale });
     
     canvas.height = viewport.height;
     canvas.width = viewport.width;
@@ -189,16 +199,23 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
       </div>
 
       {/* PDF Canvas */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto p-4 bg-gray-900" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-auto p-0 sm:p-4 bg-gray-900" 
+        style={{ 
+          maxHeight: 'calc(100vh - 180px)',
+          WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+        }}
+      >
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div className="w-full flex justify-center">
             <canvas
               ref={canvasRef}
-              className="border border-gray-600 rounded shadow-lg"
+              className="sm:border sm:border-gray-600 sm:rounded sm:shadow-lg max-w-full w-full"
               onContextMenu={(e) => e.preventDefault()}
               onSelectStart={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}
@@ -207,7 +224,8 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
                 WebkitUserSelect: 'none',
                 MozUserSelect: 'none',
                 msUserSelect: 'none',
-                display: 'block'
+                display: 'block',
+                touchAction: 'pan-x pan-y' // Allow touch scrolling
               }}
             />
           </div>
