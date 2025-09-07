@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/api';
 import OdiaInputField, { OdiaSidebar } from '../common/OdiaInputField';
+import Swal from 'sweetalert2';
 import { 
   Plus, 
   Trash2, 
@@ -101,11 +102,25 @@ function CourseForm() {
         const backendError = data.error ? `\nDetails: ${data.error}` : '';
         throw new Error(errorMsg + backendError);
       }
-      alert('Course created successfully!');
-      navigate('/admin/dashboard');
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Course created successfully!',
+        icon: 'success',
+        confirmButtonText: 'Great!',
+        confirmButtonColor: '#10b981'
+      }).then(() => {
+        navigate('/admin/dashboard');
+      });
     } catch (error) {
       console.error('Error creating course:', error);
-      alert(error.message || 'Failed to create course. Please try again.');
+      Swal.fire({
+        title: 'Creation Failed',
+        text: error.message || 'Failed to create course. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'Try Again',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -166,8 +181,19 @@ function CourseForm() {
     setExpandedChapter(prev => prev + 1);
   };
 
-  const removeChapter = (index) => {
-    if (window.confirm('Are you sure you want to remove this chapter and all its questions?')) {
+  const removeChapter = async (index) => {
+    const result = await Swal.fire({
+      title: 'Remove Chapter?',
+      text: 'This will remove the chapter and all its questions permanently.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Remove',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       setFormData(prev => ({
         ...prev,
         chapters: prev.chapters.filter((_, i) => i !== index)
@@ -194,8 +220,19 @@ function CourseForm() {
     }));
   };
 
-  const removeQuestion = (chapterIndex, questionIndex) => {
-    if (window.confirm('Are you sure you want to remove this question?')) {
+  const removeQuestion = async (chapterIndex, questionIndex) => {
+    const result = await Swal.fire({
+      title: 'Remove Question?',
+      text: 'This question will be permanently deleted.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Remove',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       setFormData(prev => {
         const updatedChapters = [...prev.chapters];
         updatedChapters[chapterIndex].questions = updatedChapters[chapterIndex].questions.filter(

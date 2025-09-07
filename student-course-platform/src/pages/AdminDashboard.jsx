@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { 
   BookOpen, 
   FileUp, 
@@ -158,9 +159,18 @@ const AdminDashboardContent = () => {
   };
 
   const handleDeleteCourse = async (courseId) => {
-    if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      return;
-    }
+    const result = await Swal.fire({
+      title: 'Delete Course?',
+      text: 'This action cannot be undone. All chapters and questions will be permanently deleted.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Delete',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -173,7 +183,13 @@ const AdminDashboardContent = () => {
       });
 
       if (response.status === 204) {
-        alert('Course deleted successfully!');
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Course deleted successfully!',
+          icon: 'success',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#10b981'
+        });
         // Refresh current page, but if it's empty and not first page, go to previous page
         if (courses.length === 1 && currentPage > 1) {
           handlePageChange(currentPage - 1);
@@ -182,11 +198,22 @@ const AdminDashboardContent = () => {
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.message || 'Failed to delete course');
+        Swal.fire({
+          title: 'Delete Failed',
+          text: errorData.message || 'Failed to delete course',
+          icon: 'error',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#ef4444'
+        });
       }
     } catch (error) {
-      // console.error('Error deleting course:', error);
-      alert('Error deleting course');
+      Swal.fire({
+        title: 'Error',
+        text: 'Error deleting course. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 
