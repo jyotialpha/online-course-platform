@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, Menu, X } from 'lucide-react';
+import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, Menu, X, RotateCcw } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import SecurePDFViewer from '../components/student/SecurePDFViewer';
+import progressService from '../services/progressService';
 
 function CourseLearning() {
   const { courseId } = useParams();
@@ -13,12 +14,13 @@ function CourseLearning() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [viewMode, setViewMode] = useState('desktop'); // desktop, mobile
-
+  const [viewMode, setViewMode] = useState('desktop');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [progress, setProgress] = useState(null);
 
   useEffect(() => {
     fetchCourse();
+    fetchProgress();
   }, [courseId]);
 
   const fetchCourse = async () => {
@@ -42,8 +44,23 @@ function CourseLearning() {
     }
   };
 
+  const fetchProgress = async () => {
+    try {
+      const progressData = await progressService.getCourseProgress(courseId);
+      setProgress(progressData.data.progress);
+    } catch (error) {
+      console.error('Failed to fetch progress:', error);
+    }
+  };
+
   const handleChapterSelect = (index) => {
     setCurrentChapter(index);
+    // Mark chapter as accessed even without PDF
+    if (course?.chapters?.[index]?._id) {
+      progressService.updateChapterProgress(courseId, course.chapters[index]._id, 0)
+        .catch(error => console.error('Failed to mark chapter access:', error));
+    }
+    setTimeout(() => fetchProgress(), 1000);
   };
 
   const handleStartMockTest = (chapterIndex) => {
@@ -102,10 +119,29 @@ function CourseLearning() {
                   <Menu className="w-5 h-5 text-white" />
                 </button>
                 {/* Desktop Progress */}
-                <div className="hidden lg:block bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-4 py-2 rounded-full border border-cyan-500/30">
-                  <span className="text-cyan-400 text-sm font-medium">
-                    Progress: 0%
-                  </span>
+                <div className="hidden lg:flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-4 py-2 rounded-full border border-cyan-500/30">
+                    <span className="text-cyan-400 text-sm font-medium">
+                      Progress: {Math.min(100, progress?.overallProgress || 0)}%
+                    </span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm('Reset all progress for this course? This will clear all completed chapters and test results.')) {
+                        try {
+                          await progressService.resetCourseProgress(courseId);
+                          await fetchProgress();
+                          alert('Progress reset successfully!');
+                        } catch (error) {
+                          alert('Failed to reset progress');
+                        }
+                      }
+                    }}
+                    className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-500/30 transition-colors"
+                    title="Reset Progress"
+                  >
+                    <RotateCcw className="w-4 h-4 text-red-400" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -129,7 +165,7 @@ function CourseLearning() {
             
             {/* Mobile Progress */}
             <div className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-4 py-3 rounded-xl border border-cyan-500/30 mb-6">
-              <span className="text-cyan-400 text-sm font-medium">Progress: 0%</span>
+              <span className="text-cyan-400 text-sm font-medium">Progress: {Math.min(100, progress?.overallProgress || 0)}%</span>
             </div>
             
             {/* Mobile Chapter List */}
@@ -156,7 +192,9 @@ function CourseLearning() {
                       <p className="text-white font-medium text-sm">Chapter {index + 1}</p>
                       <p className="text-gray-400 text-xs truncate">{chapter.title}</p>
                     </div>
-                    <CheckCircle className="w-4 h-4 text-gray-500" />
+                    <CheckCircle className={`w-4 h-4 ${
+                      progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
+                    }`} />
                   </div>
                 </button>
               ))}
@@ -191,7 +229,9 @@ function CourseLearning() {
                           <p className="text-white font-medium text-sm">Chapter {index + 1}</p>
                           <p className="text-gray-400 text-xs truncate">{chapter.title}</p>
                         </div>
-                        <CheckCircle className="w-4 h-4 text-gray-500" />
+                        <CheckCircle className={`w-4 h-4 ${
+                          progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
+                        }`} />
                       </div>
                     </button>
                   ))}
@@ -270,6 +310,8 @@ function CourseLearning() {
                       <SecurePDFViewer
                         pdfUrl={`${API_BASE_URL}/api/protected/pdf-viewer/${courseId}/${currentChapter}?token=${localStorage.getItem('token')}`}
                         className={isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[calc(100vh-200px)] lg:min-h-[400px]'}
+                        courseId={courseId}
+                        chapterId={course.chapters[currentChapter]._id}
                       />
                       <div className="p-2 lg:p-4 bg-gray-900/50 backdrop-blur-sm">
                         <div className="flex items-center justify-between">

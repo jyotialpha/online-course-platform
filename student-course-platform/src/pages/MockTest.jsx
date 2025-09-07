@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, ArrowLeft, ArrowRight, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import progressService from '../services/progressService';
+import Swal from 'sweetalert2';
 
 function MockTest() {
   const { courseId, chapterIndex } = useParams();
@@ -14,6 +16,7 @@ function MockTest() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [loading, setLoading] = useState(true);
   const [testStarted, setTestStarted] = useState(false);
+  const [testStartTime, setTestStartTime] = useState(null);
 
   useEffect(() => {
     fetchChapter();
@@ -57,6 +60,7 @@ function MockTest() {
 
   const startTest = () => {
     setTestStarted(true);
+    setTestStartTime(Date.now());
   };
 
   const handleAnswerSelect = (questionIndex, optionIndex) => {
@@ -66,7 +70,55 @@ function MockTest() {
     }));
   };
 
-  const handleSubmitTest = () => {
+  const handleSubmitTest = async () => {
+    const results = calculateResults();
+    const timeSpentSeconds = testStartTime ? Math.round((Date.now() - testStartTime) / 1000) : 0;
+    
+    // Prepare test result data
+    const testResultData = {
+      courseId,
+      chapterId: chapterIndex,
+      score: results.percentage,
+      totalQuestions: results.total,
+      correctAnswers: results.score,
+      timeSpent: timeSpentSeconds,
+      answers: chapter.questions.map((question, index) => ({
+        questionId: question._id || index.toString(),
+        selectedAnswer: answers[index] !== undefined ? question.options[answers[index]] : '',
+        isCorrect: answers[index] === question.correctAnswer,
+        timeSpent: Math.round(timeSpentSeconds / results.total) // Average time per question
+      }))
+    };
+
+    try {
+      await progressService.saveTestResult(testResultData);
+      
+      // Mark chapter as completed after test
+      await progressService.updateChapterProgress(courseId, chapterIndex, timeSpentSeconds / 60);
+      
+      // Show success message
+      const passed = results.percentage >= 60;
+      Swal.fire({
+        title: passed ? 'Test Completed!' : 'Test Completed',
+        text: `You scored ${results.score}/${results.total} (${results.percentage}%)`,
+        icon: passed ? 'success' : 'info',
+        confirmButtonText: 'View Results',
+        background: '#1f2937',
+        color: '#ffffff',
+        confirmButtonColor: passed ? '#10b981' : '#6366f1'
+      });
+    } catch (error) {
+      console.error('Failed to save test result:', error);
+      Swal.fire({
+        title: 'Warning',
+        text: 'Test completed but results could not be saved. Please check your connection.',
+        icon: 'warning',
+        background: '#1f2937',
+        color: '#ffffff',
+        confirmButtonColor: '#f59e0b'
+      });
+    }
+    
     setShowResults(true);
     setTestStarted(false);
   };

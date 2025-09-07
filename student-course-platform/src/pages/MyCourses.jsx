@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Clock, Play, Award, Search, Filter, BarChart3, Calendar, CheckCircle, Star } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import progressService from '../services/progressService';
 
 function MyCourses() {
   const navigate = useNavigate();
@@ -10,7 +11,8 @@ function MyCourses() {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('recent'); // recent, title, progress
+  const [sortBy, setSortBy] = useState('recent');
+  const [courseProgress, setCourseProgress] = useState({});
 
   useEffect(() => {
     fetchMyCourses();
@@ -27,6 +29,23 @@ function MyCourses() {
         const data = await response.json();
         setCourses(data.data.courses);
         setFilteredCourses(data.data.courses);
+        
+        // Fetch progress for each course
+        const progressPromises = data.data.courses.map(async (course) => {
+          try {
+            const progressData = await progressService.getCourseProgress(course._id);
+            return { courseId: course._id, progress: progressData.data.progress };
+          } catch (error) {
+            return { courseId: course._id, progress: { overallProgress: 0 } };
+          }
+        });
+        
+        const progressResults = await Promise.all(progressPromises);
+        const progressMap = {};
+        progressResults.forEach(({ courseId, progress }) => {
+          progressMap[courseId] = progress;
+        });
+        setCourseProgress(progressMap);
       }
     } catch (error) {
       console.error('Error fetching my courses:', error);
@@ -202,10 +221,10 @@ function MyCourses() {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-400">Course Progress</span>
-                    <span className="text-sm font-medium text-cyan-400">0%</span>
+                    <span className="text-sm font-medium text-cyan-400">{Math.min(100, courseProgress[course._id]?.overallProgress || 0)}%</span>
                   </div>
                   <div className="w-full bg-gray-700/50 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full" style={{width: '0%'}}></div>
+                    <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full" style={{width: `${Math.min(100, courseProgress[course._id]?.overallProgress || 0)}%`}}></div>
                   </div>
                 </div>
                 

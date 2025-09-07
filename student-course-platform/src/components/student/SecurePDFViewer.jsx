@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, ZoomIn, ZoomOut, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
+import progressService from '../../services/progressService';
 
-const SecurePDFViewer = ({ pdfUrl, className }) => {
+const SecurePDFViewer = ({ pdfUrl, className, courseId, chapterId }) => {
   const canvasRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [pdfDoc, setPdfDoc] = useState(null);
@@ -9,10 +10,45 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.5);
   const [loading, setLoading] = useState(true);
+  const [startTime, setStartTime] = useState(null);
 
   useEffect(() => {
+    console.log('SecurePDFViewer mounted with props:', { pdfUrl, courseId, chapterId });
     loadPDF();
+    setStartTime(Date.now());
   }, [pdfUrl]);
+
+  // Track time spent and update progress when component unmounts
+  useEffect(() => {
+    return () => {
+      if (startTime && courseId && chapterId) {
+        const timeSpent = Math.round((Date.now() - startTime) / 1000 / 60);
+        console.log('Updating progress:', { courseId, chapterId, timeSpent });
+        if (timeSpent > 0) {
+          progressService.updateChapterProgress(courseId, chapterId, timeSpent)
+            .then(result => console.log('Progress updated successfully:', result))
+            .catch(error => console.error('Failed to update progress:', error));
+        }
+      }
+    };
+  }, [startTime, courseId, chapterId]);
+
+  // Also update progress periodically while viewing
+  useEffect(() => {
+    if (!startTime || !courseId || !chapterId) return;
+
+    const interval = setInterval(() => {
+      const timeSpent = Math.round((Date.now() - startTime) / 1000 / 60);
+      if (timeSpent > 0) {
+        console.log('Periodic progress update:', { courseId, chapterId, timeSpent });
+        progressService.updateChapterProgress(courseId, chapterId, timeSpent)
+          .then(result => console.log('Periodic progress updated:', result))
+          .catch(error => console.error('Periodic progress update failed:', error));
+      }
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [startTime, courseId, chapterId]);
 
   useEffect(() => {
     if (pdfDoc) {
@@ -75,14 +111,12 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
     let finalScale = scale;
     
     if (isMobile) {
-      // On mobile, ensure minimum readability scale
-      const containerWidth = container.clientWidth - 16; // Less padding on mobile
+      const containerWidth = container.clientWidth - 16;
       const pageViewport = page.getViewport({ scale: 1 });
       const fitScale = containerWidth / pageViewport.width;
       
-      // Use fit scale if it's larger than current scale for better readability
       if (scale < fitScale) {
-        finalScale = Math.min(fitScale, 2.0); // Cap at 2x for performance
+        finalScale = Math.min(fitScale, 2.0);
       }
     }
     
@@ -123,9 +157,7 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
 
   return (
     <div className={`bg-gray-800 rounded-xl overflow-hidden ${className}`}>
-      {/* Controls */}
       <div className="flex flex-col sm:flex-row items-center gap-2 p-2 sm:p-3 bg-gray-700 border-b border-gray-600">
-        {/* Page Navigation */}
         <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <button
             onClick={() => goToPage(1)}
@@ -173,7 +205,6 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
           </button>
         </div>
         
-        {/* Controls */}
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1 bg-gray-600 rounded p-1">
             <button onClick={scrollUp} className="p-1 hover:bg-gray-500 rounded" title="Scroll Up">
@@ -198,13 +229,12 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
         </div>
       </div>
 
-      {/* PDF Canvas */}
       <div 
         ref={scrollContainerRef} 
         className="flex-1 overflow-auto p-0 sm:p-4 bg-gray-900" 
         style={{ 
           maxHeight: 'calc(100vh - 180px)',
-          WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         {loading ? (
@@ -225,7 +255,7 @@ const SecurePDFViewer = ({ pdfUrl, className }) => {
                 MozUserSelect: 'none',
                 msUserSelect: 'none',
                 display: 'block',
-                touchAction: 'pan-x pan-y' // Allow touch scrolling
+                touchAction: 'pan-x pan-y'
               }}
             />
           </div>

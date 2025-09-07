@@ -4,16 +4,20 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Award, TrendingUp, Clock, ArrowRight, Sparkles, Play, Calendar, CheckCircle, Star, BarChart3 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import progressService from '../services/progressService';
 
 function StudentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalCourses: 0, enrolledCourses: 0 });
   const [recentCourses, setRecentCourses] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [courseProgress, setCourseProgress] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchAnalytics();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -37,12 +41,40 @@ function StudentDashboard() {
           enrolledCourses: myCoursesData.data.courses.length
         });
         
-        setRecentCourses(myCoursesData.data.courses.slice(0, 3));
+        const courses = myCoursesData.data.courses.slice(0, 3);
+        setRecentCourses(courses);
+        
+        // Fetch progress for each course
+        const progressPromises = courses.map(async (course) => {
+          try {
+            const progressData = await progressService.getCourseProgress(course._id);
+            return { courseId: course._id, progress: progressData.data.progress };
+          } catch (error) {
+            console.error(`Error fetching progress for course ${course._id}:`, error);
+            return { courseId: course._id, progress: null };
+          }
+        });
+        
+        const progressResults = await Promise.all(progressPromises);
+        const progressMap = {};
+        progressResults.forEach(({ courseId, progress }) => {
+          progressMap[courseId] = progress;
+        });
+        setCourseProgress(progressMap);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const analyticsData = await progressService.getAnalytics();
+      setAnalytics(analyticsData.data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
     }
   };
 
@@ -125,11 +157,11 @@ function StudentDashboard() {
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {Math.round((stats.enrolledCourses / Math.max(stats.totalCourses, 1)) * 100)}%
+                {analytics?.overview?.averageScore || 0}%
               </span>
             </div>
-            <h3 className="text-white font-semibold mb-1">Progress</h3>
-            <p className="text-gray-400 text-sm">Enrollment rate</p>
+            <h3 className="text-white font-semibold mb-1">Avg Score</h3>
+            <p className="text-gray-400 text-sm">Test performance</p>
           </motion.div>
         </div>
 
@@ -231,7 +263,7 @@ function StudentDashboard() {
                     
                     {/* Progress Badge */}
                     <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">
-                      0% Complete
+                      {courseProgress[course._id]?.overallProgress || 0}% Complete
                     </div>
                     
                     {/* Play Overlay */}
@@ -275,10 +307,10 @@ function StudentDashboard() {
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-gray-400">Progress</span>
-                        <span className="text-xs font-medium text-cyan-400">0%</span>
+                        <span className="text-xs font-medium text-cyan-400">{courseProgress[course._id]?.overallProgress || 0}%</span>
                       </div>
                       <div className="w-full bg-gray-700/50 rounded-full h-1.5">
-                        <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-1.5 rounded-full" style={{width: '0%'}}></div>
+                        <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-1.5 rounded-full" style={{width: `${courseProgress[course._id]?.overallProgress || 0}%`}}></div>
                       </div>
                     </div>
                     
@@ -314,24 +346,20 @@ function StudentDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{stats.enrolledCourses}</div>
+                  <div className="text-2xl font-bold text-cyan-400">{analytics?.overview?.totalCourses || stats.enrolledCourses}</div>
                   <div className="text-sm text-gray-400">Active Courses</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">0</div>
+                  <div className="text-2xl font-bold text-green-400">{analytics?.overview?.completedCourses || 0}</div>
                   <div className="text-sm text-gray-400">Completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-400">
-                    {recentCourses.reduce((total, course) => 
-                      total + (course.chapters?.reduce((chTotal, chapter) => 
-                        chTotal + (chapter.questions?.length || 0), 0) || 0), 0)}
-                  </div>
-                  <div className="text-sm text-gray-400">Total Questions</div>
+                  <div className="text-2xl font-bold text-purple-400">{analytics?.overview?.totalTestsTaken || 0}</div>
+                  <div className="text-sm text-gray-400">Tests Taken</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400">0%</div>
-                  <div className="text-sm text-gray-400">Avg Progress</div>
+                  <div className="text-2xl font-bold text-yellow-400">{Math.round(analytics?.overview?.totalTimeSpent / 60) || 0}h</div>
+                  <div className="text-sm text-gray-400">Time Spent</div>
                 </div>
               </div>
             </motion.div>

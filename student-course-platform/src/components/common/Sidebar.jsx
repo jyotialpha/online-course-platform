@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
-import { LayoutDashboard, BookOpen, FileText, FileQuestion, LogOut, PlusCircle, FileUp, GraduationCap, User } from 'lucide-react';
+import { LayoutDashboard, BookOpen, FileText, FileQuestion, LogOut, PlusCircle, FileUp, GraduationCap, User, BarChart3 } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -47,7 +47,7 @@ const Sidebar = () => {
         { path: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
         { path: '/student/courses', label: 'All Courses', icon: <BookOpen className="w-5 h-5" /> },
         { path: '/student/my-courses', label: 'My Courses', icon: <FileText className="w-5 h-5" /> },
-        { path: '/student/tests', label: 'Mock Tests', icon: <FileQuestion className="w-5 h-5" /> },
+        { path: '/student/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
       ]
     : [];
 

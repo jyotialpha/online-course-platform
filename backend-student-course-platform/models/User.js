@@ -15,8 +15,30 @@ const userSchema = new mongoose.Schema({
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     enrolledAt: { type: Date, default: Date.now },
     status: { type: String, enum: ['enrolled', 'purchased'], default: 'enrolled' },
-    paymentId: { type: String }, // For future purchase implementation
-    amount: { type: Number, default: 0 } // For future purchase implementation
+    paymentId: { type: String },
+    amount: { type: Number, default: 0 },
+    progress: {
+      completedChapters: [{ type: String }], // Chapter IDs
+      lastAccessedChapter: { type: String },
+      lastAccessedAt: { type: Date },
+      overallProgress: { type: Number, default: 0 }, // Percentage
+      timeSpent: { type: Number, default: 0 } // Minutes
+    }
+  }],
+  testResults: [{
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    chapterId: { type: String, required: true },
+    score: { type: Number, required: true },
+    totalQuestions: { type: Number, required: true },
+    correctAnswers: { type: Number, required: true },
+    timeSpent: { type: Number, required: true }, // Seconds
+    completedAt: { type: Date, default: Date.now },
+    answers: [{
+      questionId: { type: String, required: true },
+      selectedAnswer: { type: String, required: true },
+      isCorrect: { type: Boolean, required: true },
+      timeSpent: { type: Number, default: 0 } // Seconds per question
+    }]
   }],
   createdAt: { type: Date, default: Date.now }
 });
