@@ -40,16 +40,16 @@ function PerformanceAnalytics() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 lg:mb-8"
         >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6">
+            <div className="mb-4 lg:mb-0">
+              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
                 Performance Analytics
               </h1>
-              <p className="text-gray-400 mt-2">Track your learning progress and performance</p>
+              <p className="text-gray-400 mt-2 text-sm lg:text-base">Track your learning progress and performance</p>
             </div>
-            <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1">
+            <div className="flex items-center gap-1 lg:gap-2 bg-white/5 rounded-xl p-1 overflow-x-auto">
               <button
                 onClick={() => {
                   setTimeRange('week');
@@ -88,27 +88,27 @@ function PerformanceAnalytics() {
         </motion.div>
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20"
+            className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-white/20"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl lg:rounded-2xl flex items-center justify-center">
+                <BookOpen className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
               </div>
               <div className="flex items-center gap-1 text-green-400 text-sm">
                 <ArrowUp className="w-4 h-4" />
                 <span>+{overview?.recentTests || 0}</span>
               </div>
             </div>
-            <h3 className="text-white font-semibold mb-1">Total Courses</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            <h3 className="text-white font-semibold mb-1 text-sm lg:text-base">Total Courses</h3>
+            <p className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               {overview?.totalCourses || 0}
             </p>
-            <p className="text-gray-400 text-sm mt-1">Active learning paths</p>
+            <p className="text-gray-400 text-xs lg:text-sm mt-1">Active learning paths</p>
           </motion.div>
 
           <motion.div
@@ -185,13 +185,13 @@ function PerformanceAnalytics() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 mb-8"
+          className="bg-white/5 backdrop-blur-xl rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-white/10 mb-6 lg:mb-8"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-2 lg:gap-3 mb-4 lg:mb-6">
+            <div className="w-6 h-6 lg:w-8 lg:h-8 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg lg:rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
               Course Performance
             </h2>
           </div>
@@ -204,22 +204,22 @@ function PerformanceAnalytics() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="bg-white/5 rounded-2xl p-4 border border-white/10"
+                  className="bg-white/5 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-white/10"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold text-lg">{course.courseName}</h3>
-                      <p className="text-gray-400 text-sm">
-                        {course.testsCompleted} tests completed • {Math.round(course.timeSpent / 60)} hours studied
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 lg:mb-4">
+                    <div className="flex-1 mb-2 sm:mb-0">
+                      <h3 className="text-white font-semibold text-base lg:text-lg">{course.courseName}</h3>
+                      <p className="text-gray-400 text-xs lg:text-sm">
+                        {course.testsCompleted} tests • {Math.round(course.timeSpent / 60)}h studied
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-cyan-400">{course.averageScore}%</div>
-                      <div className="text-gray-400 text-sm">Avg Score</div>
+                    <div className="text-left sm:text-right">
+                      <div className="text-xl lg:text-2xl font-bold text-cyan-400">{course.averageScore}%</div>
+                      <div className="text-gray-400 text-xs lg:text-sm">Avg Score</div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 lg:gap-4">
                     {/* Progress */}
                     <div className="bg-white/5 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
