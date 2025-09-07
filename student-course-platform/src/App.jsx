@@ -5,6 +5,7 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 import Navbar from './components/common/Navbar';
 import Sidebar from './components/common/Sidebar';
 import Footer from './components/common/Footer';
+import ScrollToTop from './components/common/ScrollToTop';
 import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentCourses from './pages/StudentCourses';
@@ -36,6 +37,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <ScrollToTop />
       {showSidebar && <Sidebar />}
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${showSidebar ? (isOpen ? 'lg:ml-64' : 'lg:ml-16') : ''}`}>
         <Navbar />
