@@ -39,8 +39,8 @@ function AppContent() {
     <div className="min-h-screen bg-gray-100">
       <ScrollToTop />
       {showSidebar && <Sidebar />}
-      <div className={`flex flex-col min-h-screen transition-all duration-300 ${showSidebar ? (isOpen ? 'lg:ml-64' : 'lg:ml-16') : ''}`}>
-        <Navbar />
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${showSidebar ? 'lg:ml-64' : ''}`}>
+        {!showSidebar && <Navbar />}
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Homepage />} />
