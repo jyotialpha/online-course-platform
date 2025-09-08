@@ -270,6 +270,125 @@ function CourseForm() {
     }));
   };
 
+  const handleBulkUpload = (chapterIndex, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const parsedQuestions = parseTxtContent(content);
+      if (parsedQuestions.length > 0) {
+        setFormData(prev => {
+          const updatedChapters = [...prev.chapters];
+          // Replace existing questions with uploaded ones
+          updatedChapters[chapterIndex].questions = parsedQuestions;
+          return { ...prev, chapters: updatedChapters };
+        });
+        Swal.fire({
+          title: 'Success!',
+          text: `Uploaded ${parsedQuestions.length} questions from file.`,
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: 'No valid questions found in the file.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const parseTxtContent = (content) => {
+    const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+    const questions = [];
+    let i = 0;
+    while (i < lines.length) {
+      if (lines[i].startsWith('Question')) {
+        i++; // skip Question X
+        if (i >= lines.length) break;
+        const questionText = lines[i];
+        i++;
+        const options = [];
+        let correctIndex = -1;
+        for (let opt = 0; opt < 4; opt++) {
+          if (i >= lines.length) break;
+          const optionLine = lines[i];
+          if (optionLine.startsWith(String.fromCharCode(65 + opt) + '.')) {
+            const optionText = optionLine.substring(2).trim();
+            options.push(optionText);
+            i++;
+            if (i < lines.length && lines[i] === 'Correct') {
+              correctIndex = opt;
+              i++;
+            }
+          } else {
+            break;
+          }
+        }
+        let explanation = '';
+        if (i < lines.length && lines[i].startsWith('Explanation')) {
+          explanation = lines[i].substring(11).trim();
+          i++;
+        }
+        if (options.length === 4 && correctIndex !== -1) {
+          questions.push({
+            question: questionText,
+            options,
+            correctAnswer: correctIndex,
+            explanation
+          });
+        }
+      } else {
+        i++;
+      }
+    }
+    return questions;
+  };
+
+  const downloadSample = () => {
+    const sampleContent = `Question 1
+
+What is 2+2?
+
+A. 3
+
+B. 4
+
+Correct
+
+C. 5
+
+D. 6
+
+Explanation: Basic math
+
+Question 2
+
+What is the capital of France?
+
+A. London
+
+B. Berlin
+
+C. Paris
+
+Correct
+
+D. Rome
+
+Explanation: Paris is the capital of France.`;
+    const blob = new Blob([sampleContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_questions.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <OdiaSidebar />
@@ -530,13 +649,29 @@ function CourseForm() {
                   <div className="mt-6 space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="text-sm font-medium text-gray-700">Mock Test Questions</h4>
-                      <button
-                        type="button"
-                        onClick={() => addQuestion(chapterIndex)}
-                        className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Add Question
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => addQuestion(chapterIndex)}
+                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Add Question
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`bulk-upload-${chapterIndex}`).click()}
+                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <File className="h-3 w-3 mr-1" /> Bulk Upload
+                        </button>
+                        <button
+                          type="button"
+                          onClick={downloadSample}
+                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                        >
+                          <FileText className="h-3 w-3 mr-1" /> Download Sample
+                        </button>
+                      </div>
                     </div>
 
                     {chapter.questions.map((question, questionIndex) => (
@@ -622,6 +757,13 @@ function CourseForm() {
                         )}
                       </div>
                     ))}
+                    <input
+                      type="file"
+                      id={`bulk-upload-${chapterIndex}`}
+                      accept=".txt"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleBulkUpload(chapterIndex, e.target.files[0])}
+                    />
                   </div>
                 </div>
               )}
