@@ -19,7 +19,7 @@ const CourseSchema = new mongoose.Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true, default: 0 },
   isFree: { type: Boolean, default: true },
-  thumbnail: { type: String }, // store file path or URL, can be null
+  thumbnail: { type: String },
   chapters: [ChapterSchema]
 }, { timestamps: true });
 
