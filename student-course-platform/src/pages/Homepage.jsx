@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, BookOpen, Zap, Clock, Play, Users, Award, TrendingUp, ArrowRight, Rocket, Target, Sparkles } from 'lucide-react';
+import { Star, BookOpen, Zap, Clock, Play, Users, Award, TrendingUp, ArrowRight, Rocket, Target, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
@@ -311,6 +311,94 @@ const FeatureCard = ({ icon: Icon, title, description, delay, accent }) => (
   </motion.div>
 );
 
+// Image Slider Component
+const ImageSlider = ({ courses }) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const sliderImages = courses.length > 0 ? courses.slice(0, 5) : [
+    { id: 1, title: 'Web Development', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=400&fit=crop', description: 'Master modern web technologies' },
+    { id: 2, title: 'Data Science', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop', description: 'Analyze data and build insights' },
+    { id: 3, title: 'Mobile Development', image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&h=400&fit=crop', description: 'Create amazing mobile apps' },
+    { id: 4, title: 'AI & Machine Learning', image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop', description: 'Build intelligent systems' },
+    { id: 5, title: 'Cloud Computing', image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop', description: 'Scale applications globally' }
+  ];
+
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, sliderImages.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
+    setIsAutoPlaying(false);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + sliderImages.length) % sliderImages.length);
+    setIsAutoPlaying(false);
+  };
+
+  return (
+    <div className="relative w-full h-96 overflow-hidden rounded-3xl mb-8">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, x: 300 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -300 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
+        >
+          <div className="relative w-full h-full">
+            <img
+              src={sliderImages[currentSlide].image || sliderImages[currentSlide].thumbnail}
+              alt={sliderImages[currentSlide].title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/60" />
+            <div className="absolute inset-0 flex items-center justify-center text-center">
+              <div>
+                <h3 className="text-4xl font-bold text-white mb-4">{sliderImages[currentSlide].title}</h3>
+                <p className="text-xl text-gray-200">{sliderImages[currentSlide].description || sliderImages[currentSlide].description}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+      >
+        <ChevronLeft className="w-6 h-6 text-white" />
+      </button>
+      
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+      >
+        <ChevronRight className="w-6 h-6 text-white" />
+      </button>
+      
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        {sliderImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => { setCurrentSlide(index); setIsAutoPlaying(false); }}
+            className={`w-3 h-3 rounded-full transition-colors ${
+              index === currentSlide ? 'bg-white' : 'bg-white/50'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Stats Section Component
 const StatsSection = () => (
   <motion.div
@@ -433,6 +521,16 @@ function Homepage() {
           animate={isLoaded ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 1 }}
         >
+          {/* Image Slider */}
+          <motion.div
+            variants={heroVariants}
+            initial="hidden"
+            animate="visible"
+            className="max-w-5xl mx-auto mb-12"
+          >
+            <ImageSlider courses={courses} />
+          </motion.div>
+          
           <motion.div variants={heroVariants} initial="hidden" animate="visible">
             <div className="flex items-center justify-center mb-6">
               <Rocket className="w-12 h-12 text-cyan-400 mr-4" animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} />
