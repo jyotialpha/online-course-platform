@@ -381,12 +381,44 @@ Correct
 
 D. Rome
 
-Explanation: Paris is the capital of France.`;
-    const blob = new Blob([sampleContent], { type: 'text/plain' });
+Explanation: Paris is the capital of France.
+
+Question 3
+
+ଭାରତର ରାଜଧାନୀ କ'ଣ?
+
+A. ମୁମ୍ବାଇ
+
+B. କୋଲକାତା
+
+C. ନୂଆଦିଲ୍ଲୀ
+
+Correct
+
+D. ଚେନ୍ନାଇ
+
+Explanation: ନୂଆଦିଲ୍ଲୀ ଭାରତର ରାଜଧାନୀ ଅଟେ।
+
+Question 4
+
+୨ + ୩ = ?
+
+A. ୪
+
+B. ୫
+
+Correct
+
+C. ୬
+
+D. ୭
+
+Explanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
+    const blob = new Blob([sampleContent], { type: 'text/plain; charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'sample_questions.txt';
+    a.download = 'sample_questions_bilingual.txt';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -681,7 +713,10 @@ Explanation: Paris is the capital of France.`;
                   {/* Questions Section */}
                   <div className="mt-6 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-gray-700">Mock Test Questions</h4>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700">Mock Test Questions</h4>
+                        <p className="text-xs text-gray-500 mt-1">Supports both English and Odia text</p>
+                      </div>
                       <div className="flex space-x-2">
                         <button
                           type="button"
@@ -702,7 +737,7 @@ Explanation: Paris is the capital of France.`;
                           onClick={downloadSample}
                           className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                         >
-                          <FileText className="h-3 w-3 mr-1" /> Download Sample
+                          <FileText className="h-3 w-3 mr-1" /> Download Template
                         </button>
                       </div>
                     </div>
