@@ -71,7 +71,8 @@ class CourseRepository {
     try {
       const result = await Course.aggregate([
         { $match: filter },
-        { $unwind: '$chapters' },
+        { $unwind: '$subjects' },
+        { $unwind: '$subjects.chapters' },
         { $count: 'totalChapters' }
       ]);
       return result[0]?.totalChapters || 0;
@@ -84,8 +85,9 @@ class CourseRepository {
     try {
       const result = await Course.aggregate([
         { $match: filter },
-        { $unwind: '$chapters' },
-        { $unwind: '$chapters.questions' },
+        { $unwind: '$subjects' },
+        { $unwind: '$subjects.chapters' },
+        { $unwind: '$subjects.chapters.questions' },
         { $count: 'totalQuestions' }
       ]);
       return result[0]?.totalQuestions || 0;

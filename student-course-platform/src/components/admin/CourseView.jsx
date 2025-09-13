@@ -21,6 +21,7 @@ function CourseView() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedChapters, setExpandedChapters] = useState({});
 
   useEffect(() => {
@@ -51,10 +52,18 @@ function CourseView() {
     }
   };
 
-  const toggleChapter = (chapterIndex) => {
+  const toggleSubject = (subjectIndex) => {
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [subjectIndex]: !prev[subjectIndex]
+    }));
+  };
+
+  const toggleChapter = (subjectIndex, chapterIndex) => {
+    const key = `${subjectIndex}-${chapterIndex}`;
     setExpandedChapters(prev => ({
       ...prev,
-      [chapterIndex]: !prev[chapterIndex]
+      [key]: !prev[key]
     }));
   };
 
@@ -131,8 +140,8 @@ function CourseView() {
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Chapters</p>
-                  <p className="text-2xl font-bold text-gray-900">{course.chapters?.length || 0}</p>
+                  <p className="text-sm font-medium text-gray-500">Subjects</p>
+                  <p className="text-2xl font-bold text-gray-900">{course.subjects?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -143,8 +152,9 @@ function CourseView() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Questions</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {course.chapters?.reduce((total, chapter) => 
-                      total + (chapter.questions?.length || 0), 0) || 0}
+                    {course.subjects?.reduce((total, subject) => 
+                      total + (subject.chapters?.reduce((chTotal, chapter) => 
+                        chTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0}
                   </p>
                 </div>
               </div>
@@ -195,32 +205,32 @@ function CourseView() {
           </div>
         </div>
 
-        {/* Chapters */}
+        {/* Subjects */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Course Chapters</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Course Subjects</h2>
           
-          {course.chapters && course.chapters.length > 0 ? (
+          {course.subjects && course.subjects.length > 0 ? (
             <div className="space-y-4">
-              {course.chapters.map((chapter, chapterIndex) => (
-                <div key={chapterIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+              {course.subjects.map((subject, subjectIndex) => (
+                <div key={subjectIndex} className="border border-gray-200 rounded-lg overflow-hidden">
                   <div 
-                    className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
-                    onClick={() => toggleChapter(chapterIndex)}
+                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100"
+                    onClick={() => toggleSubject(subjectIndex)}
                   >
                     <div className="flex items-center">
                       <BookOpen className="h-5 w-5 text-blue-600 mr-3" />
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          Chapter {chapterIndex + 1}: {chapter.title}
+                          Subject {subjectIndex + 1}: {subject.title}
                         </h3>
-                        <p className="text-sm text-gray-600">{chapter.description}</p>
+                        <p className="text-sm text-gray-600">{subject.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">
-                        {chapter.questions?.length || 0} questions
+                        {subject.chapters?.length || 0} chapters
                       </span>
-                      {expandedChapters[chapterIndex] ? (
+                      {expandedSubjects[subjectIndex] ? (
                         <ChevronUp className="h-5 w-5 text-gray-500" />
                       ) : (
                         <ChevronDown className="h-5 w-5 text-gray-500" />
@@ -228,80 +238,124 @@ function CourseView() {
                     </div>
                   </div>
 
-                  {expandedChapters[chapterIndex] && (
+                  {expandedSubjects[subjectIndex] && (
                     <div className="p-4 border-t border-gray-200">
-                      {/* Chapter PDF */}
-                      {chapter.pdf && (
-                        <div className="mb-6">
-                          <h4 className="font-medium text-gray-900 mb-3">Chapter PDF</h4>
-                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <FileText className="h-8 w-8 text-red-600 mr-3" />
-                                <div>
-                                  <p className="font-medium text-gray-900">Chapter PDF</p>
-                                  <p className="text-sm text-gray-600">Click to view or download</p>
-                                </div>
-                              </div>
-                              <a
-                                href={chapter.pdf}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                              >
-                                View PDF
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Chapter Questions */}
-                      <div className="space-y-4">
-                        <h4 className="font-medium text-gray-900">Questions</h4>
-                        {chapter.questions && chapter.questions.length > 0 ? (
-                          chapter.questions.map((question, questionIndex) => (
-                            <div key={questionIndex} className="bg-gray-50 rounded-lg p-4">
-                              <div className="mb-3">
-                                <h5 className="font-medium text-gray-900 mb-2">
-                                  Question {questionIndex + 1}
-                                </h5>
-                                <p className="text-gray-700">{question.question}</p>
-                              </div>
-                              
-                              <div className="space-y-2 mb-3">
-                                <p className="text-sm font-medium text-gray-700">Options:</p>
-                                {question.options.map((option, optionIndex) => (
-                                  <div key={optionIndex} className="flex items-center">
-                                    <span className="mr-2 text-sm font-medium text-gray-700 w-5">
-                                      {String.fromCharCode(65 + optionIndex)}.
+                      {/* Chapters within Subject */}
+                      {subject.chapters && subject.chapters.length > 0 ? (
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-gray-900 mb-3">Chapters</h4>
+                          {subject.chapters.map((chapter, chapterIndex) => {
+                            const chapterKey = `${subjectIndex}-${chapterIndex}`;
+                            return (
+                              <div key={chapterIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div 
+                                  className="flex justify-between items-center p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                                  onClick={() => toggleChapter(subjectIndex, chapterIndex)}
+                                >
+                                  <div className="flex items-center">
+                                    <FileText className="h-4 w-4 text-gray-600 mr-2" />
+                                    <div>
+                                      <h5 className="font-medium text-gray-900 text-sm">
+                                        Chapter {chapterIndex + 1}: {chapter.title}
+                                      </h5>
+                                      <p className="text-xs text-gray-600">{chapter.description}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-gray-500">
+                                      {chapter.questions?.length || 0} questions
                                     </span>
-                                    <span className={`text-sm ${
-                                      optionIndex === question.correctAnswer 
-                                        ? 'text-green-700 font-semibold' 
-                                        : 'text-gray-700'
-                                    }`}>
-                                      {option}
-                                    </span>
-                                    {optionIndex === question.correctAnswer && (
-                                      <CheckCircle className="h-4 w-4 text-green-600 ml-2" />
+                                    {expandedChapters[chapterKey] ? (
+                                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-gray-500" />
                                     )}
                                   </div>
-                                ))}
-                              </div>
-                              
-                              {question.explanation && (
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700 mb-1">Explanation:</p>
-                                  <p className="text-sm text-gray-600">{question.explanation}</p>
                                 </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-gray-500 text-sm">No questions in this chapter</p>
-                        )}
-                      </div>
+
+                                {expandedChapters[chapterKey] && (
+                                  <div className="p-3 border-t border-gray-200">
+                                    {/* Chapter PDF */}
+                                    {chapter.pdf && (
+                                      <div className="mb-4">
+                                        <h6 className="font-medium text-gray-900 mb-2 text-sm">Chapter PDF</h6>
+                                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center">
+                                              <FileText className="h-6 w-6 text-red-600 mr-2" />
+                                              <div>
+                                                <p className="font-medium text-gray-900 text-sm">Chapter PDF</p>
+                                                <p className="text-xs text-gray-600">Click to view or download</p>
+                                              </div>
+                                            </div>
+                                            <a
+                                              href={chapter.pdf}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                                            >
+                                              View PDF
+                                            </a>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Chapter Questions */}
+                                    <div className="space-y-3">
+                                      <h6 className="font-medium text-gray-900 text-sm">Questions</h6>
+                                      {chapter.questions && chapter.questions.length > 0 ? (
+                                        chapter.questions.map((question, questionIndex) => (
+                                          <div key={questionIndex} className="bg-gray-50 rounded-lg p-3">
+                                            <div className="mb-2">
+                                              <h6 className="font-medium text-gray-900 mb-1 text-sm">
+                                                Question {questionIndex + 1}
+                                              </h6>
+                                              <p className="text-gray-700 text-sm">{question.question}</p>
+                                            </div>
+                                            
+                                            <div className="space-y-1 mb-2">
+                                              <p className="text-xs font-medium text-gray-700">Options:</p>
+                                              {question.options.map((option, optionIndex) => (
+                                                <div key={optionIndex} className="flex items-center">
+                                                  <span className="mr-2 text-xs font-medium text-gray-700 w-4">
+                                                    {String.fromCharCode(65 + optionIndex)}.
+                                                  </span>
+                                                  <span className={`text-xs ${
+                                                    optionIndex === question.correctAnswer 
+                                                      ? 'text-green-700 font-semibold' 
+                                                      : 'text-gray-700'
+                                                  }`}>
+                                                    {option}
+                                                  </span>
+                                                  {optionIndex === question.correctAnswer && (
+                                                    <CheckCircle className="h-3 w-3 text-green-600 ml-1" />
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                            
+                                            {question.explanation && (
+                                              <div>
+                                                <p className="text-xs font-medium text-gray-700 mb-1">Explanation:</p>
+                                                <p className="text-xs text-gray-600">{question.explanation}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-gray-500 text-xs">No questions in this chapter</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No chapters in this subject</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -310,7 +364,7 @@ function CourseView() {
           ) : (
             <div className="text-center py-8">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500">No chapters added to this course yet.</p>
+              <p className="text-gray-500">No subjects added to this course yet.</p>
             </div>
           )}
         </div>

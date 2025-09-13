@@ -25,24 +25,31 @@ function CourseForm() {
     price: '',
     isFree: true,
     thumbnail: null,
-    chapters: [
+    subjects: [
       {
         title: '',
         description: '',
-        pdf: null,
-        questions: [
+        chapters: [
           {
-            question: '',
-            options: ['', '', '', ''],
-            correctAnswer: 0,
-            explanation: ''
+            title: '',
+            description: '',
+            pdf: null,
+            questions: [
+              {
+                question: '',
+                options: ['', '', '', ''],
+                correctAnswer: 0,
+                explanation: ''
+              }
+            ]
           }
         ]
       }
     ]
   });
-  const [expandedChapter, setExpandedChapter] = useState(0);
-  const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 });
+  const [expandedSubject, setExpandedSubject] = useState(0);
+  const [expandedChapter, setExpandedChapter] = useState({ 0: 0 });
+  const [expandedQuestions, setExpandedQuestions] = useState({ '0-0': 0 });
   const [isCourseInfoExpanded, setIsCourseInfoExpanded] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -51,34 +58,90 @@ function CourseForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Prepare payload
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Upload thumbnail if exists
+      let thumbnailUrl = null;
+      if (formData.thumbnail) {
+        const thumbnailFormData = new FormData();
+        thumbnailFormData.append('thumbnail', formData.thumbnail);
+        
+        const thumbnailRes = await fetch(`${API_BASE_URL}/api/upload/thumbnail`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: thumbnailFormData
+        });
+        
+        if (thumbnailRes.ok) {
+          const thumbnailData = await thumbnailRes.json();
+          thumbnailUrl = thumbnailData.data.url;
+        }
+      }
+
+      // Process subjects with PDF uploads
+      const processedSubjects = await Promise.all(
+        formData.subjects.map(async (subj) => {
+          const processedChapters = await Promise.all(
+            subj.chapters.map(async (ch) => {
+              let pdfUrl = null;
+              
+              // Upload PDF if exists
+              if (ch.pdf) {
+                const pdfFormData = new FormData();
+                pdfFormData.append('pdf', ch.pdf);
+                
+                const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` },
+                  body: pdfFormData
+                });
+                
+                if (pdfRes.ok) {
+                  const pdfData = await pdfRes.json();
+                  pdfUrl = pdfData.data.url;
+                }
+              }
+              
+              return {
+                title: ch.title,
+                description: ch.description,
+                pdf: pdfUrl,
+                questions: ch.questions.map(q => ({
+                  question: q.question,
+                  options: q.options,
+                  correctAnswer: q.correctAnswer,
+                  explanation: q.explanation
+                }))
+              };
+            })
+          );
+          
+          return {
+            title: subj.title,
+            description: subj.description,
+            chapters: processedChapters
+          };
+        })
+      );
+
+      // Prepare final payload
       const payload = {
         title: formData.title,
         description: formData.description,
         price: formData.isFree ? 0 : Number(formData.price),
         isFree: formData.isFree,
-        thumbnail: null,
-        chapters: formData.chapters.map(ch => ({
-          title: ch.title,
-          description: ch.description,
-          pdf: null,
-          questions: ch.questions.map(q => ({
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-            explanation: q.explanation
-          }))
-        }))
+        thumbnail: thumbnailUrl,
+        subjects: processedSubjects
       };
 
-      console.log('Payload:', payload);
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+      console.log('Subjects count:', payload.subjects.length);
+      console.log('First subject:', payload.subjects[0]);
 
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
+
 
       const res = await fetch(`${API_BASE_URL}/api/admin/courses`, {
         method: 'POST',
@@ -92,16 +155,28 @@ function CourseForm() {
 
       let data;
       const text = await res.text();
+      console.log('Response text:', text);
       try {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
+        console.error('JSON parse error:', err);
         throw new Error('Server returned invalid JSON');
       }
+      console.log('Response data:', data);
 
       if (!res.ok) {
         // Show full backend error message if available
         const errorMsg = data.message || 'Failed to create course';
-        const backendError = data.error ? `\nDetails: ${data.error}` : '';
+        let backendError = '';
+        if (data.error) {
+          if (typeof data.error === 'string') {
+            backendError = `\nDetails: ${data.error}`;
+          } else if (data.error.message) {
+            backendError = `\nDetails: ${data.error.message}`;
+          } else {
+            backendError = `\nDetails: ${JSON.stringify(data.error)}`;
+          }
+        }
         throw new Error(errorMsg + backendError);
       }
       
@@ -136,54 +211,115 @@ function CourseForm() {
     }));
   };
 
-  const handleChapterChange = (chapterIndex, field, value) => {
+  const handleSubjectChange = (subjectIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex][field] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const handleQuestionChange = (chapterIndex, questionIndex, field, value) => {
+  const handleChapterChange = (subjectIndex, chapterIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions[questionIndex][field] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const handleOptionChange = (chapterIndex, questionIndex, optionIndex, value) => {
+  const handleQuestionChange = (subjectIndex, chapterIndex, questionIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const addChapter = () => {
+  const handleOptionChange = (subjectIndex, chapterIndex, questionIndex, optionIndex, value) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
+      return { ...prev, subjects: updatedSubjects };
+    });
+  };
+
+  const addSubject = () => {
     setFormData(prev => ({
       ...prev,
-      chapters: [
-        ...prev.chapters,
+      subjects: [
+        ...prev.subjects,
         {
           title: '',
           description: '',
-          pdf: null,
-          questions: [
+          chapters: [
             {
-              question: '',
-              options: ['', '', '', ''],
-              correctAnswer: 0,
-              explanation: ''
+              title: '',
+              description: '',
+              pdf: null,
+              questions: [
+                {
+                  question: '',
+                  options: ['', '', '', ''],
+                  correctAnswer: 0,
+                  explanation: ''
+                }
+              ]
             }
           ]
         }
       ]
     }));
-    setExpandedChapter(prev => prev + 1);
+    setExpandedSubject(prev => prev + 1);
   };
 
-  const removeChapter = async (index) => {
+  const addChapter = (subjectIndex) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters.push({
+        title: '',
+        description: '',
+        pdf: null,
+        questions: [
+          {
+            question: '',
+            options: ['', '', '', ''],
+            correctAnswer: 0,
+            explanation: ''
+          }
+        ]
+      });
+      
+      setExpandedChapter(prev => ({
+        ...prev,
+        [subjectIndex]: updatedSubjects[subjectIndex].chapters.length - 1
+      }));
+      
+      return { ...prev, subjects: updatedSubjects };
+    });
+  };
+
+  const removeSubject = async (index) => {
+    const result = await Swal.fire({
+      title: 'Remove Subject?',
+      text: 'This will remove the subject and all its chapters permanently.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Remove',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      setFormData(prev => ({
+        ...prev,
+        subjects: prev.subjects.filter((_, i) => i !== index)
+      }));
+      setExpandedSubject(prev => (prev === index ? Math.max(0, index - 1) : prev));
+    }
+  };
+
+  const removeChapter = async (subjectIndex, chapterIndex) => {
     const result = await Swal.fire({
       title: 'Remove Chapter?',
       text: 'This will remove the chapter and all its questions permanently.',
@@ -196,33 +332,33 @@ function CourseForm() {
     });
 
     if (result.isConfirmed) {
-      setFormData(prev => ({
-        ...prev,
-        chapters: prev.chapters.filter((_, i) => i !== index)
-      }));
-      setExpandedChapter(prev => (prev === index ? Math.max(0, index - 1) : prev));
+      setFormData(prev => {
+        const updatedSubjects = [...prev.subjects];
+        updatedSubjects[subjectIndex].chapters = updatedSubjects[subjectIndex].chapters.filter((_, i) => i !== chapterIndex);
+        return { ...prev, subjects: updatedSubjects };
+      });
     }
   };
 
-  const addQuestion = (chapterIndex) => {
+  const addQuestion = (subjectIndex, chapterIndex) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions.push({
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions.push({
         question: '',
         options: ['', '', '', ''],
         correctAnswer: 0,
         explanation: ''
       });
-      return { ...prev, chapters: updatedChapters };
+      return { ...prev, subjects: updatedSubjects };
     });
     
     setExpandedQuestions(prev => ({
       ...prev,
-      [chapterIndex]: formData.chapters[chapterIndex].questions.length
+      [`${subjectIndex}-${chapterIndex}`]: formData.subjects[subjectIndex].chapters[chapterIndex].questions.length
     }));
   };
 
-  const removeQuestion = async (chapterIndex, questionIndex) => {
+  const removeQuestion = async (subjectIndex, chapterIndex, questionIndex) => {
     const result = await Swal.fire({
       title: 'Remove Question?',
       text: 'This question will be permanently deleted.',
@@ -236,32 +372,27 @@ function CourseForm() {
 
     if (result.isConfirmed) {
       setFormData(prev => {
-        const updatedChapters = [...prev.chapters];
-        updatedChapters[chapterIndex].questions = updatedChapters[chapterIndex].questions.filter(
-          (_, i) => i !== questionIndex
-        );
-        return { ...prev, chapters: updatedChapters };
+        const updatedSubjects = [...prev.subjects];
+        updatedSubjects[subjectIndex].chapters[chapterIndex].questions = 
+          updatedSubjects[subjectIndex].chapters[chapterIndex].questions.filter((_, i) => i !== questionIndex);
+        return { ...prev, subjects: updatedSubjects };
       });
-      
-      setExpandedQuestions(prev => ({
-        ...prev,
-        [chapterIndex]: Math.max(0, (prev[chapterIndex] || 0) - 1)
-      }));
     }
   };
 
-  const toggleQuestion = (chapterIndex, questionIndex) => {
+  const toggleQuestion = (subjectIndex, chapterIndex, questionIndex) => {
+    const key = `${subjectIndex}-${chapterIndex}`;
     setExpandedQuestions(prev => ({
       ...prev,
-      [chapterIndex]: prev[chapterIndex] === questionIndex ? -1 : questionIndex
+      [key]: prev[key] === questionIndex ? -1 : questionIndex
     }));
   };
 
-  const handleFileUpload = (chapterIndex, file) => {
+  const handleFileUpload = (subjectIndex, chapterIndex, file) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].pdf = file;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].pdf = file;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
@@ -272,7 +403,7 @@ function CourseForm() {
     }));
   };
 
-  const handleBulkUpload = (chapterIndex, file) => {
+  const handleBulkUpload = (subjectIndex, chapterIndex, file) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -280,10 +411,9 @@ function CourseForm() {
       const parsedQuestions = parseTxtContent(content);
       if (parsedQuestions.length > 0) {
         setFormData(prev => {
-          const updatedChapters = [...prev.chapters];
-          // Replace existing questions with uploaded ones
-          updatedChapters[chapterIndex].questions = parsedQuestions;
-          return { ...prev, chapters: updatedChapters };
+          const updatedSubjects = [...prev.subjects];
+          updatedSubjects[subjectIndex].chapters[chapterIndex].questions = parsedQuestions;
+          return { ...prev, subjects: updatedSubjects };
         });
         Swal.fire({
           title: 'Success!',
@@ -618,32 +748,32 @@ Explanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
           )}
         </div>
 
-        {/* Chapters Section */}
+        {/* Subjects Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-700">Course Chapters</h3>
+            <h3 className="text-lg font-semibold text-gray-700">Course Subjects</h3>
             <button
               type="button"
-              onClick={addChapter}
+              onClick={addSubject}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <Plus className="h-4 w-4 mr-1" /> Add Chapter
+              <Plus className="h-4 w-4 mr-1" /> Add Subject
             </button>
           </div>
 
-          {formData.chapters.map((chapter, chapterIndex) => (
-            <div key={chapterIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+          {formData.subjects.map((subject, subjectIndex) => (
+            <div key={subjectIndex} className="border border-gray-200 rounded-lg overflow-hidden">
               <div 
-                className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
-                onClick={() => setExpandedChapter(expandedChapter === chapterIndex ? -1 : chapterIndex)}
+                className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100"
+                onClick={() => setExpandedSubject(expandedSubject === subjectIndex ? -1 : subjectIndex)}
               >
                 <div className="flex items-center">
                   <span className="font-medium text-gray-700">
-                    Chapter {chapterIndex + 1}: {chapter.title || 'Untitled Chapter'}
+                    Subject {subjectIndex + 1}: {subject.title || 'Untitled Subject'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {expandedChapter === chapterIndex ? (
+                  {expandedSubject === subjectIndex ? (
                     <ChevronUp className="h-5 w-5 text-gray-500" />
                   ) : (
                     <ChevronDown className="h-5 w-5 text-gray-500" />
@@ -652,186 +782,256 @@ Explanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeChapter(chapterIndex);
+                      removeSubject(subjectIndex);
                     }}
                     className="text-red-500 hover:text-red-700"
-                    title="Remove chapter"
+                    title="Remove subject"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              {expandedChapter === chapterIndex && (
+              {expandedSubject === subjectIndex && (
                 <div className="p-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chapter Title</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject Title</label>
                     <input
                       type="text"
-                      value={chapter.title}
-                      onChange={(e) => handleChapterChange(chapterIndex, 'title', e.target.value)}
+                      value={subject.title}
+                      onChange={(e) => handleSubjectChange(subjectIndex, 'title', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Chapter title"
+                      placeholder="Subject title"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea
-                      value={chapter.description}
-                      onChange={(e) => handleChapterChange(chapterIndex, 'description', e.target.value)}
+                      value={subject.description}
+                      onChange={(e) => handleSubjectChange(subjectIndex, 'description', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows="2"
-                      placeholder="Chapter description"
+                      placeholder="Subject description"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chapter PDF</label>
-                    <div className="mt-1 flex items-center">
-                      <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span>Choose file</span>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="sr-only"
-                          onChange={(e) => handleFileUpload(chapterIndex, e.target.files[0])}
-                        />
-                      </label>
-                      <span className="ml-2 text-sm text-gray-500">
-                        {chapter.pdf ? chapter.pdf.name : 'No file chosen'}
-                      </span>
+                  
+                  {/* Chapters within Subject */}
+                  <div className="mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-md font-medium text-gray-700">Chapters</h4>
+                      <button
+                        type="button"
+                        onClick={() => addChapter(subjectIndex)}
+                        className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add Chapter
+                      </button>
                     </div>
-                    {chapter.pdf && (
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <FileText className="h-4 w-4 mr-1" />
-                        <span>{chapter.pdf.name} ({(chapter.pdf.size / 1024).toFixed(2)} KB)</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Questions Section */}
-                  <div className="mt-6 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700">Mock Test Questions</h4>
-                        <p className="text-xs text-gray-500 mt-1">Supports both English and Odia text</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => addQuestion(chapterIndex)}
-                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <Plus className="h-3 w-3 mr-1" /> Add Question
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById(`bulk-upload-${chapterIndex}`).click()}
-                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <File className="h-3 w-3 mr-1" /> Bulk Upload
-                        </button>
-                        <button
-                          type="button"
-                          onClick={downloadSample}
-                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                        >
-                          <FileText className="h-3 w-3 mr-1" /> Download Template
-                        </button>
-                      </div>
-                    </div>
-
-                    {chapter.questions.map((question, questionIndex) => (
-                      <div key={questionIndex} className="bg-gray-50 rounded-md border border-gray-200 overflow-hidden mb-3">
+                    
+                    {subject.chapters.map((chapter, chapterIndex) => (
+                      <div key={chapterIndex} className="border border-gray-200 rounded-lg overflow-hidden mb-3">
                         <div 
-                          className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100"
-                          onClick={() => toggleQuestion(chapterIndex, questionIndex)}
+                          className="flex justify-between items-center p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                          onClick={() => setExpandedChapter(prev => ({
+                            ...prev,
+                            [subjectIndex]: prev[subjectIndex] === chapterIndex ? -1 : chapterIndex
+                          }))}
                         >
-                          <div className="flex items-center">
-                            <span className="font-medium text-gray-700">
-                              Question {questionIndex + 1}
-                            </span>
-                          </div>
+                          <span className="font-medium text-gray-700 text-sm">
+                            Chapter {chapterIndex + 1}: {chapter.title || 'Untitled Chapter'}
+                          </span>
                           <div className="flex items-center space-x-2">
-                            {expandedQuestions[chapterIndex] === questionIndex ? (
-                              <ChevronUp className="h-5 w-5 text-gray-500" />
+                            {expandedChapter[subjectIndex] === chapterIndex ? (
+                              <ChevronUp className="h-4 w-4 text-gray-500" />
                             ) : (
-                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
                             )}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                removeQuestion(chapterIndex, questionIndex);
+                                removeChapter(subjectIndex, chapterIndex);
                               }}
                               className="text-red-500 hover:text-red-700"
-                              title="Remove question"
+                              title="Remove chapter"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
                         </div>
                         
-                        {expandedQuestions[chapterIndex] === questionIndex && (
-                          <div className="p-4 pt-0 space-y-3">
+                        {expandedChapter[subjectIndex] === chapterIndex && (
+                          <div className="p-3 space-y-3">
                             <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Chapter Title</label>
                               <input
                                 type="text"
-                                value={question.question}
-                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'question', e.target.value)}
-                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter question text"
+                                value={chapter.title}
+                                onChange={(e) => handleChapterChange(subjectIndex, chapterIndex, 'title', e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Chapter title"
                                 required
                               />
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {question.options.map((option, optionIndex) => (
-                                <div key={optionIndex} className="flex items-center">
-                                  <span className="mr-2 text-sm font-medium text-gray-700 w-5">
-                                    {String.fromCharCode(65 + optionIndex)}.
-                                  </span>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                              <textarea
+                                value={chapter.description}
+                                onChange={(e) => handleChapterChange(subjectIndex, chapterIndex, 'description', e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows="2"
+                                placeholder="Chapter description"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Chapter PDF</label>
+                              <div className="mt-1 flex items-center">
+                                <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
+                                  <span>Choose file</span>
                                   <input
-                                    type="text"
-                                    value={option}
-                                    onChange={(e) => handleOptionChange(chapterIndex, questionIndex, optionIndex, e.target.value)}
-                                    className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                                    required
+                                    type="file"
+                                    accept=".pdf"
+                                    className="sr-only"
+                                    onChange={(e) => handleFileUpload(subjectIndex, chapterIndex, e.target.files[0])}
                                   />
-                                  <input
-                                    type="radio"
-                                    name={`correct-${chapterIndex}-${questionIndex}`}
-                                    checked={question.correctAnswer === optionIndex}
-                                    onChange={() => handleQuestionChange(chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
-                                    className="ml-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                                  />
-                                  <span className="ml-1 text-xs text-gray-500">Correct</span>
-                                </div>
-                              ))}
+                                </label>
+                                <span className="ml-2 text-sm text-gray-500">
+                                  {chapter.pdf ? chapter.pdf.name : 'No file chosen'}
+                                </span>
+                              </div>
                             </div>
 
-                            <div>
-                              <textarea
-                                value={question.explanation}
-                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'explanation', e.target.value)}
-                                className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                rows="2"
-                                placeholder="Explanation for the correct answer"
+                            {/* Questions Section */}
+                            <div className="mt-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-700">Mock Test Questions</h5>
+                                  <p className="text-xs text-gray-500 mt-1">Supports both English and Odia text</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => addQuestion(subjectIndex, chapterIndex)}
+                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" /> Add Question
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById(`bulk-upload-${subjectIndex}-${chapterIndex}`).click()}
+                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                                  >
+                                    <File className="h-3 w-3 mr-1" /> Bulk Upload
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={downloadSample}
+                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" /> Template
+                                  </button>
+                                </div>
+                              </div>
+
+                              {chapter.questions.map((question, questionIndex) => {
+                                const questionKey = `${subjectIndex}-${chapterIndex}`;
+                                return (
+                                  <div key={questionIndex} className="bg-gray-50 rounded-md border border-gray-200 overflow-hidden mb-2">
+                                    <div 
+                                      className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-100"
+                                      onClick={() => toggleQuestion(subjectIndex, chapterIndex, questionIndex)}
+                                    >
+                                      <span className="font-medium text-gray-700 text-sm">
+                                        Question {questionIndex + 1}
+                                      </span>
+                                      <div className="flex items-center space-x-2">
+                                        {expandedQuestions[questionKey] === questionIndex ? (
+                                          <ChevronUp className="h-4 w-4 text-gray-500" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeQuestion(subjectIndex, chapterIndex, questionIndex);
+                                          }}
+                                          className="text-red-500 hover:text-red-700"
+                                          title="Remove question"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {expandedQuestions[questionKey] === questionIndex && (
+                                      <div className="p-3 pt-0 space-y-2">
+                                        <div>
+                                          <input
+                                            type="text"
+                                            value={question.question}
+                                            onChange={(e) => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'question', e.target.value)}
+                                            className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Enter question text"
+                                            required
+                                          />
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          {question.options.map((option, optionIndex) => (
+                                            <div key={optionIndex} className="flex items-center">
+                                              <span className="mr-2 text-sm font-medium text-gray-700 w-5">
+                                                {String.fromCharCode(65 + optionIndex)}.
+                                              </span>
+                                              <input
+                                                type="text"
+                                                value={option}
+                                                onChange={(e) => handleOptionChange(subjectIndex, chapterIndex, questionIndex, optionIndex, e.target.value)}
+                                                className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                                required
+                                              />
+                                              <input
+                                                type="radio"
+                                                name={`correct-${subjectIndex}-${chapterIndex}-${questionIndex}`}
+                                                checked={question.correctAnswer === optionIndex}
+                                                onChange={() => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
+                                                className="ml-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                              />
+                                              <span className="ml-1 text-xs text-gray-500">Correct</span>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        <div>
+                                          <textarea
+                                            value={question.explanation}
+                                            onChange={(e) => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'explanation', e.target.value)}
+                                            className="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            rows="2"
+                                            placeholder="Explanation for the correct answer"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              <input
+                                type="file"
+                                id={`bulk-upload-${subjectIndex}-${chapterIndex}`}
+                                accept=".txt"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleBulkUpload(subjectIndex, chapterIndex, e.target.files[0])}
                               />
                             </div>
                           </div>
                         )}
                       </div>
                     ))}
-                    <input
-                      type="file"
-                      id={`bulk-upload-${chapterIndex}`}
-                      accept=".txt"
-                      style={{ display: 'none' }}
-                      onChange={(e) => handleBulkUpload(chapterIndex, e.target.files[0])}
-                    />
                   </div>
                 </div>
               )}

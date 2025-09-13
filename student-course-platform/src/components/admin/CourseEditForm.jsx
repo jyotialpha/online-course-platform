@@ -29,10 +29,12 @@ function CourseEditForm() {
     price: '',
     isFree: true,
     thumbnail: null,
-    chapters: []
+    subjects: []
   });
-  const [expandedChapter, setExpandedChapter] = useState(0);
-  const [expandedQuestions, setExpandedQuestions] = useState({ 0: 0 });
+  const [currentCourse, setCurrentCourse] = useState(null);
+  const [expandedSubject, setExpandedSubject] = useState(0);
+  const [expandedChapter, setExpandedChapter] = useState({ 0: 0 });
+  const [expandedQuestions, setExpandedQuestions] = useState({ '0-0': 0 });
   const [isCourseInfoExpanded, setIsCourseInfoExpanded] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -56,13 +58,14 @@ function CourseEditForm() {
         const data = await response.json();
         const course = data.data.course;
         
+        setCurrentCourse(course);
         setFormData({
           title: course.title || '',
           description: course.description || '',
           price: course.price || '',
           isFree: course.isFree !== undefined ? course.isFree : (course.price === 0),
           thumbnail: null,
-          chapters: course.chapters || []
+          subjects: course.subjects || []
         });
       } else {
         setError('Failed to fetch course');
@@ -90,8 +93,15 @@ function CourseEditForm() {
       });
       const currentCourse = currentCourseRes.ok ? (await currentCourseRes.json()).data.course : null;
 
-      // Upload new thumbnail if exists, otherwise keep existing
+      // Handle thumbnail upload/removal
       let thumbnailUrl = currentCourse?.thumbnail;
+      
+      // If thumbnail was removed from currentCourse, set to null
+      if (currentCourse && !currentCourse.thumbnail) {
+        thumbnailUrl = null;
+      }
+      
+      // If new thumbnail uploaded
       if (formData.thumbnail) {
         // Delete old thumbnail if exists
         if (currentCourse?.thumbnail) {
@@ -124,55 +134,74 @@ function CourseEditForm() {
         }
       }
 
-      // Upload new PDFs and prepare chapters
-      const processedChapters = await Promise.all(
-        formData.chapters.map(async (ch, index) => {
-          // Keep existing PDF URL if no new file uploaded
-          let pdfUrl = currentCourse?.chapters?.[index]?.pdf || null;
-          
-          // If it's a new file (File object), upload it
-          if (ch.pdf && typeof ch.pdf === 'object' && ch.pdf.name) {
-            // Delete old PDF if exists
-            if (currentCourse?.chapters?.[index]?.pdf) {
-              try {
-                await fetch(`${API_BASE_URL}/api/upload/delete-file`, {
-                  method: 'DELETE',
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ fileUrl: currentCourse.chapters[index].pdf })
-                });
-              } catch (error) {
-                console.log('Failed to delete old PDF:', error);
+      // Process subjects with chapters and PDFs
+      const processedSubjects = await Promise.all(
+        formData.subjects.map(async (subject, subjectIndex) => {
+          const processedChapters = await Promise.all(
+            subject.chapters.map(async (ch, chapterIndex) => {
+              // Handle PDF - check if it was removed or if new file uploaded
+              let pdfUrl = null;
+              
+              // If chapter has existing PDF string, use it
+              if (ch.pdf && typeof ch.pdf === 'string') {
+                pdfUrl = ch.pdf;
               }
-            }
-            
-            const pdfFormData = new FormData();
-            pdfFormData.append('pdf', ch.pdf);
-            
-            const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: pdfFormData
-            });
-            
-            if (pdfRes.ok) {
-              const pdfData = await pdfRes.json();
-              pdfUrl = pdfData.data.url;
-            }
-          }
+              // If no PDF in chapter but exists in current course, use current
+              else if (!ch.pdf && currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.pdf) {
+                pdfUrl = currentCourse.subjects[subjectIndex].chapters[chapterIndex].pdf;
+              }
+              
+              // If it's a new file (File object), upload it
+              if (ch.pdf && typeof ch.pdf === 'object' && ch.pdf.name) {
+                // Delete old PDF if exists
+                if (currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.pdf) {
+                  try {
+                    await fetch(`${API_BASE_URL}/api/upload/delete-file`, {
+                      method: 'DELETE',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ fileUrl: currentCourse.subjects[subjectIndex].chapters[chapterIndex].pdf })
+                    });
+                  } catch (error) {
+                    console.log('Failed to delete old PDF:', error);
+                  }
+                }
+                
+                const pdfFormData = new FormData();
+                pdfFormData.append('pdf', ch.pdf);
+                
+                const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` },
+                  body: pdfFormData
+                });
+                
+                if (pdfRes.ok) {
+                  const pdfData = await pdfRes.json();
+                  pdfUrl = pdfData.data.url;
+                }
+              }
+              
+              return {
+                title: ch.title,
+                description: ch.description,
+                pdf: pdfUrl,
+                questions: ch.questions.map(q => ({
+                  question: q.question,
+                  options: q.options,
+                  correctAnswer: q.correctAnswer,
+                  explanation: q.explanation
+                }))
+              };
+            })
+          );
           
           return {
-            title: ch.title,
-            description: ch.description,
-            pdf: pdfUrl,
-            questions: ch.questions.map(q => ({
-              question: q.question,
-              options: q.options,
-              correctAnswer: q.correctAnswer,
-              explanation: q.explanation
-            }))
+            title: subject.title,
+            description: subject.description,
+            chapters: processedChapters
           };
         })
       );
@@ -184,7 +213,7 @@ function CourseEditForm() {
         price: formData.isFree ? 0 : Number(formData.price),
         isFree: formData.isFree,
         thumbnail: thumbnailUrl,
-        chapters: processedChapters
+        subjects: processedSubjects
       };
 
       console.log('Update Payload:', payload);
@@ -244,54 +273,109 @@ function CourseEditForm() {
     }));
   };
 
-  const handleChapterChange = (chapterIndex, field, value) => {
+  const handleSubjectChange = (subjectIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex][field] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const handleQuestionChange = (chapterIndex, questionIndex, field, value) => {
+  const handleChapterChange = (subjectIndex, chapterIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions[questionIndex][field] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const handleOptionChange = (chapterIndex, questionIndex, optionIndex, value) => {
+  const handleQuestionChange = (subjectIndex, chapterIndex, questionIndex, field, value) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex][field] = value;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
-  const addChapter = () => {
+  const handleOptionChange = (subjectIndex, chapterIndex, questionIndex, optionIndex, value) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].options[optionIndex] = value;
+      return { ...prev, subjects: updatedSubjects };
+    });
+  };
+
+  const addSubject = () => {
     setFormData(prev => ({
       ...prev,
-      chapters: [
-        ...prev.chapters,
+      subjects: [
+        ...prev.subjects,
         {
           title: '',
           description: '',
-          pdf: null,
-          questions: [
+          chapters: [
             {
-              question: '',
-              options: ['', '', '', ''],
-              correctAnswer: 0,
-              explanation: ''
+              title: '',
+              description: '',
+              pdf: null,
+              questions: [
+                {
+                  question: '',
+                  options: ['', '', '', ''],
+                  correctAnswer: 0,
+                  explanation: ''
+                }
+              ]
             }
           ]
         }
       ]
     }));
-    setExpandedChapter(prev => prev + 1);
+    setExpandedSubject(prev => prev + 1);
   };
 
-  const removeChapter = async (index) => {
+  const addChapter = (subjectIndex) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters.push({
+        title: '',
+        description: '',
+        pdf: null,
+        questions: [
+          {
+            question: '',
+            options: ['', '', '', ''],
+            correctAnswer: 0,
+            explanation: ''
+          }
+        ]
+      });
+      return { ...prev, subjects: updatedSubjects };
+    });
+  };
+
+  const removeSubject = async (index) => {
+    const result = await Swal.fire({
+      title: 'Remove Subject?',
+      text: 'This will remove the subject and all its chapters permanently.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Remove',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      setFormData(prev => ({
+        ...prev,
+        subjects: prev.subjects.filter((_, i) => i !== index)
+      }));
+      setExpandedSubject(prev => (prev === index ? Math.max(0, index - 1) : prev));
+    }
+  };
+
+  const removeChapter = async (subjectIndex, chapterIndex) => {
     const result = await Swal.fire({
       title: 'Remove Chapter?',
       text: 'This will remove the chapter and all its questions permanently.',
@@ -304,33 +388,34 @@ function CourseEditForm() {
     });
 
     if (result.isConfirmed) {
-      setFormData(prev => ({
-        ...prev,
-        chapters: prev.chapters.filter((_, i) => i !== index)
-      }));
-      setExpandedChapter(prev => (prev === index ? Math.max(0, index - 1) : prev));
+      setFormData(prev => {
+        const updatedSubjects = [...prev.subjects];
+        updatedSubjects[subjectIndex].chapters = updatedSubjects[subjectIndex].chapters.filter((_, i) => i !== chapterIndex);
+        return { ...prev, subjects: updatedSubjects };
+      });
     }
   };
 
-  const addQuestion = (chapterIndex) => {
+  const addQuestion = (subjectIndex, chapterIndex) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].questions.push({
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions.push({
         question: '',
         options: ['', '', '', ''],
         correctAnswer: 0,
         explanation: ''
       });
-      return { ...prev, chapters: updatedChapters };
+      return { ...prev, subjects: updatedSubjects };
     });
     
+    const key = `${subjectIndex}-${chapterIndex}`;
     setExpandedQuestions(prev => ({
       ...prev,
-      [chapterIndex]: formData.chapters[chapterIndex].questions.length
+      [key]: formData.subjects[subjectIndex].chapters[chapterIndex].questions.length
     }));
   };
 
-  const removeQuestion = async (chapterIndex, questionIndex) => {
+  const removeQuestion = async (subjectIndex, chapterIndex, questionIndex) => {
     const result = await Swal.fire({
       title: 'Remove Question?',
       text: 'This question will be permanently deleted.',
@@ -344,32 +429,34 @@ function CourseEditForm() {
 
     if (result.isConfirmed) {
       setFormData(prev => {
-        const updatedChapters = [...prev.chapters];
-        updatedChapters[chapterIndex].questions = updatedChapters[chapterIndex].questions.filter(
+        const updatedSubjects = [...prev.subjects];
+        updatedSubjects[subjectIndex].chapters[chapterIndex].questions = updatedSubjects[subjectIndex].chapters[chapterIndex].questions.filter(
           (_, i) => i !== questionIndex
         );
-        return { ...prev, chapters: updatedChapters };
+        return { ...prev, subjects: updatedSubjects };
       });
       
+      const key = `${subjectIndex}-${chapterIndex}`;
       setExpandedQuestions(prev => ({
         ...prev,
-        [chapterIndex]: Math.max(0, (prev[chapterIndex] || 0) - 1)
+        [key]: Math.max(0, (prev[key] || 0) - 1)
       }));
     }
   };
 
-  const toggleQuestion = (chapterIndex, questionIndex) => {
+  const toggleQuestion = (subjectIndex, chapterIndex, questionIndex) => {
+    const key = `${subjectIndex}-${chapterIndex}`;
     setExpandedQuestions(prev => ({
       ...prev,
-      [chapterIndex]: prev[chapterIndex] === questionIndex ? -1 : questionIndex
+      [key]: prev[key] === questionIndex ? -1 : questionIndex
     }));
   };
 
-  const handleFileUpload = (chapterIndex, file) => {
+  const handleFileUpload = (subjectIndex, chapterIndex, file) => {
     setFormData(prev => {
-      const updatedChapters = [...prev.chapters];
-      updatedChapters[chapterIndex].pdf = file;
-      return { ...prev, chapters: updatedChapters };
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].pdf = file;
+      return { ...prev, subjects: updatedSubjects };
     });
   };
 
@@ -545,11 +632,55 @@ function CourseEditForm() {
                     Course Thumbnail
                   </label>
                   <div className="space-y-3">
+                    {/* Show current thumbnail from database */}
+                    {!formData.thumbnail && currentCourse?.thumbnail && (
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">Current Thumbnail</span>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentCourse(prev => ({ ...prev, thumbnail: null }))}
+                            className="text-red-500 hover:text-red-700 text-xs"
+                            title="Remove current thumbnail"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-16 h-16 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                            <img
+                              src={currentCourse.thumbnail}
+                              alt="Current thumbnail"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full flex items-center justify-center text-gray-400" style={{display: 'none'}}>
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-600">Current course thumbnail</p>
+                            <a
+                              href={currentCourse.thumbnail}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-xs"
+                            >
+                              View Full Size
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center space-x-4">
                       <label className="cursor-pointer bg-white py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                         <span className="flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2" />
-                          Choose New Image
+                          {formData.thumbnail ? 'Change Image' : 'Choose Image'}
                         </span>
                         <input
                           type="file"
@@ -560,19 +691,15 @@ function CourseEditForm() {
                           onChange={(e) => handleThumbnailUpload(e.target.files[0])}
                         />
                       </label>
-                      {formData.thumbnail && (
-                        <span className="text-sm text-gray-600">
-                          {formData.thumbnail.name} ({(formData.thumbnail.size / 1024).toFixed(2)} KB)
-                        </span>
-                      )}
                     </div>
                     
+                    {/* Show new thumbnail preview */}
                     {formData.thumbnail && (
                       <div className="flex items-center space-x-3">
                         <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
                           <img
                             src={URL.createObjectURL(formData.thumbnail)}
-                            alt="Course thumbnail preview"
+                            alt="New thumbnail preview"
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -586,7 +713,7 @@ function CourseEditForm() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleThumbnailUpload(null)}
+                          onClick={() => setFormData(prev => ({ ...prev, thumbnail: null }))}
                           className="text-red-500 hover:text-red-700 p-1"
                           title="Remove new thumbnail"
                         >
@@ -601,32 +728,32 @@ function CourseEditForm() {
           )}
         </div>
 
-        {/* Chapters Section */}
+        {/* Subjects Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-700">Course Chapters</h3>
+            <h3 className="text-lg font-semibold text-gray-700">Course Subjects</h3>
             <button
               type="button"
-              onClick={addChapter}
+              onClick={addSubject}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <Plus className="h-4 w-4 mr-1" /> Add Chapter
+              <Plus className="h-4 w-4 mr-1" /> Add Subject
             </button>
           </div>
 
-          {formData.chapters.map((chapter, chapterIndex) => (
-            <div key={chapterIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+          {formData.subjects.map((subject, subjectIndex) => (
+            <div key={subjectIndex} className="border border-gray-200 rounded-lg overflow-hidden">
               <div 
                 className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
-                onClick={() => setExpandedChapter(expandedChapter === chapterIndex ? -1 : chapterIndex)}
+                onClick={() => setExpandedSubject(expandedSubject === subjectIndex ? -1 : subjectIndex)}
               >
                 <div className="flex items-center">
                   <span className="font-medium text-gray-700">
-                    Chapter {chapterIndex + 1}: {chapter.title || 'Untitled Chapter'}
+                    Subject {subjectIndex + 1}: {subject.title || 'Untitled Subject'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {expandedChapter === chapterIndex ? (
+                  {expandedSubject === subjectIndex ? (
                     <ChevronUp className="h-5 w-5 text-gray-500" />
                   ) : (
                     <ChevronDown className="h-5 w-5 text-gray-500" />
@@ -635,24 +762,24 @@ function CourseEditForm() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeChapter(chapterIndex);
+                      removeSubject(subjectIndex);
                     }}
                     className="text-red-500 hover:text-red-700"
-                    title="Remove chapter"
+                    title="Remove subject"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              {expandedChapter === chapterIndex && (
+              {expandedSubject === subjectIndex && (
                 <div className="p-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chapter Title</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject Title</label>
                     <OdiaInputField
-                      value={chapter.title}
-                      onChange={(e) => handleChapterChange(chapterIndex, 'title', e.target.value)}
-                      placeholder="Chapter title"
+                      value={subject.title}
+                      onChange={(e) => handleSubjectChange(subjectIndex, 'title', e.target.value)}
+                      placeholder="Subject title"
                       required
                     />
                   </div>
@@ -660,143 +787,269 @@ function CourseEditForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <OdiaInputField
                       as="textarea"
-                      value={chapter.description}
-                      onChange={(e) => handleChapterChange(chapterIndex, 'description', e.target.value)}
+                      value={subject.description}
+                      onChange={(e) => handleSubjectChange(subjectIndex, 'description', e.target.value)}
                       rows={2}
-                      placeholder="Chapter description"
+                      placeholder="Subject description"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chapter PDF</label>
-                    <div className="space-y-3">
-                      {chapter.pdf && typeof chapter.pdf === 'string' && (
-                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <FileText className="h-6 w-6 text-red-600 mr-2" />
-                              <span className="text-sm text-gray-700">Current PDF</span>
-                            </div>
-                            <a
-                              href={chapter.pdf}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              View Current
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-4">
-                        <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                          <span>Choose New PDF</span>
-                          <input
-                            type="file"
-                            accept=".pdf"
-                            className="sr-only"
-                            onChange={(e) => handleFileUpload(chapterIndex, e.target.files[0])}
-                          />
-                        </label>
-                        {chapter.pdf && typeof chapter.pdf === 'object' && (
-                          <span className="text-sm text-gray-600">
-                            New: {chapter.pdf.name} ({(chapter.pdf.size / 1024).toFixed(2)} KB)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Questions Section */}
+                  
+                  {/* Chapters Section */}
                   <div className="mt-6 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-gray-700">Mock Test Questions</h4>
+                      <h4 className="text-sm font-medium text-gray-700">Chapters</h4>
                       <button
                         type="button"
-                        onClick={() => addQuestion(chapterIndex)}
+                        onClick={() => addChapter(subjectIndex)}
                         className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        <Plus className="h-3 w-3 mr-1" /> Add Question
+                        <Plus className="h-3 w-3 mr-1" /> Add Chapter
                       </button>
                     </div>
 
-                    {chapter.questions.map((question, questionIndex) => (
-                      <div key={questionIndex} className="bg-gray-50 rounded-md border border-gray-200 overflow-hidden mb-3">
+                    {subject.chapters?.map((chapter, chapterIndex) => (
+                      <div key={chapterIndex} className="bg-white rounded-md border border-gray-200 overflow-hidden">
                         <div 
-                          className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100"
-                          onClick={() => toggleQuestion(chapterIndex, questionIndex)}
+                          className="flex justify-between items-center p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                          onClick={() => {
+                            const key = `${subjectIndex}-${chapterIndex}`;
+                            setExpandedChapter(prev => ({ ...prev, [subjectIndex]: prev[subjectIndex] === chapterIndex ? -1 : chapterIndex }));
+                          }}
                         >
                           <div className="flex items-center">
                             <span className="font-medium text-gray-700">
-                              Question {questionIndex + 1}
+                              Chapter {chapterIndex + 1}: {chapter.title || 'Untitled Chapter'}
                             </span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            {expandedQuestions[chapterIndex] === questionIndex ? (
-                              <ChevronUp className="h-5 w-5 text-gray-500" />
+                            {expandedChapter[subjectIndex] === chapterIndex ? (
+                              <ChevronUp className="h-4 w-4 text-gray-500" />
                             ) : (
-                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
                             )}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                removeQuestion(chapterIndex, questionIndex);
+                                removeChapter(subjectIndex, chapterIndex);
                               }}
                               className="text-red-500 hover:text-red-700"
-                              title="Remove question"
+                              title="Remove chapter"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
                         </div>
-                        
-                        {expandedQuestions[chapterIndex] === questionIndex && (
-                          <div className="p-4 pt-0 space-y-3">
+
+                        {expandedChapter[subjectIndex] === chapterIndex && (
+                          <div className="p-3 space-y-3">
                             <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Chapter Title</label>
                               <OdiaInputField
-                                as="textarea"
-                                value={question.question}
-                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'question', e.target.value)}
-                                placeholder="Enter question text"
-                                rows={2}
+                                value={chapter.title}
+                                onChange={(e) => handleChapterChange(subjectIndex, chapterIndex, 'title', e.target.value)}
+                                placeholder="Chapter title"
                                 required
                               />
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {question.options.map((option, optionIndex) => (
-                                <div key={optionIndex} className="flex items-center">
-                                  <span className="mr-2 text-sm font-medium text-gray-700 w-5">
-                                    {String.fromCharCode(65 + optionIndex)}.
-                                  </span>
-                                  <OdiaInputField
-                                    value={option}
-                                    onChange={(e) => handleOptionChange(chapterIndex, questionIndex, optionIndex, e.target.value)}
-                                    className="flex-1"
-                                    placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                                    required
-                                  />
-                                  <input
-                                    type="radio"
-                                    name={`correct-${chapterIndex}-${questionIndex}`}
-                                    checked={question.correctAnswer === optionIndex}
-                                    onChange={() => handleQuestionChange(chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
-                                    className="ml-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                                  />
-                                  <span className="ml-1 text-xs text-gray-500">Correct</span>
-                                </div>
-                              ))}
-                            </div>
-
                             <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
                               <OdiaInputField
                                 as="textarea"
-                                value={question.explanation}
-                                onChange={(e) => handleQuestionChange(chapterIndex, questionIndex, 'explanation', e.target.value)}
-                                placeholder="Explanation for the correct answer"
+                                value={chapter.description}
+                                onChange={(e) => handleChapterChange(subjectIndex, chapterIndex, 'description', e.target.value)}
                                 rows={2}
+                                placeholder="Chapter description"
+                                required
                               />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Chapter PDF</label>
+                              <div className="space-y-2">
+                                {/* Show current PDF if exists and no new file selected */}
+                                {!chapter.pdf && currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.pdf && (
+                                  <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center">
+                                        <FileText className="h-4 w-4 text-red-600 mr-2" />
+                                        <span className="text-xs text-gray-700">Current PDF</span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <a
+                                          href={currentCourse.subjects[subjectIndex].chapters[chapterIndex].pdf}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 text-xs"
+                                        >
+                                          View
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updatedCourse = { ...currentCourse };
+                                            updatedCourse.subjects[subjectIndex].chapters[chapterIndex].pdf = null;
+                                            setCurrentCourse(updatedCourse);
+                                          }}
+                                          className="text-red-500 hover:text-red-700 text-xs"
+                                          title="Remove current PDF"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Show current PDF if it's a string (existing) */}
+                                {chapter.pdf && typeof chapter.pdf === 'string' && (
+                                  <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center">
+                                        <FileText className="h-4 w-4 text-red-600 mr-2" />
+                                        <span className="text-xs text-gray-700">Current PDF</span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <a
+                                          href={chapter.pdf}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 text-xs"
+                                        >
+                                          View
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleChapterChange(subjectIndex, chapterIndex, 'pdf', null)}
+                                          className="text-red-500 hover:text-red-700 text-xs"
+                                          title="Remove PDF"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center space-x-2">
+                                  <label className="cursor-pointer bg-white py-1 px-2 border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50">
+                                    <span>{chapter.pdf ? 'Change PDF' : 'Choose PDF'}</span>
+                                    <input
+                                      type="file"
+                                      accept=".pdf"
+                                      className="sr-only"
+                                      onChange={(e) => handleFileUpload(subjectIndex, chapterIndex, e.target.files[0])}
+                                    />
+                                  </label>
+                                  {chapter.pdf && typeof chapter.pdf === 'object' && (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs text-gray-600">
+                                        New: {chapter.pdf.name}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleChapterChange(subjectIndex, chapterIndex, 'pdf', null)}
+                                        className="text-red-500 hover:text-red-700"
+                                        title="Remove new PDF"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Questions Section */}
+                            <div className="mt-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <h5 className="text-xs font-medium text-gray-700">Questions</h5>
+                                <button
+                                  type="button"
+                                  onClick={() => addQuestion(subjectIndex, chapterIndex)}
+                                  className="inline-flex items-center px-2 py-0.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" /> Add Question
+                                </button>
+                              </div>
+
+                              {chapter.questions?.map((question, questionIndex) => {
+                                const key = `${subjectIndex}-${chapterIndex}`;
+                                return (
+                                  <div key={questionIndex} className="bg-gray-50 rounded border border-gray-200 overflow-hidden">
+                                    <div 
+                                      className="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
+                                      onClick={() => toggleQuestion(subjectIndex, chapterIndex, questionIndex)}
+                                    >
+                                      <span className="text-xs font-medium text-gray-700">
+                                        Q{questionIndex + 1}
+                                      </span>
+                                      <div className="flex items-center space-x-1">
+                                        {expandedQuestions[key] === questionIndex ? (
+                                          <ChevronUp className="h-3 w-3 text-gray-500" />
+                                        ) : (
+                                          <ChevronDown className="h-3 w-3 text-gray-500" />
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeQuestion(subjectIndex, chapterIndex, questionIndex);
+                                          }}
+                                          className="text-red-500 hover:text-red-700"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {expandedQuestions[key] === questionIndex && (
+                                      <div className="p-2 space-y-2">
+                                        <OdiaInputField
+                                          as="textarea"
+                                          value={question.question}
+                                          onChange={(e) => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'question', e.target.value)}
+                                          placeholder="Question text"
+                                          rows={2}
+                                          required
+                                        />
+                                        
+                                        <div className="grid grid-cols-2 gap-1">
+                                          {question.options?.map((option, optionIndex) => (
+                                            <div key={optionIndex} className="flex items-center space-x-1">
+                                              <span className="text-xs font-medium text-gray-700 w-4">
+                                                {String.fromCharCode(65 + optionIndex)}.
+                                              </span>
+                                              <OdiaInputField
+                                                value={option}
+                                                onChange={(e) => handleOptionChange(subjectIndex, chapterIndex, questionIndex, optionIndex, e.target.value)}
+                                                className="flex-1 text-xs"
+                                                placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                                required
+                                              />
+                                              <input
+                                                type="radio"
+                                                name={`correct-${subjectIndex}-${chapterIndex}-${questionIndex}`}
+                                                checked={question.correctAnswer === optionIndex}
+                                                onChange={() => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'correctAnswer', optionIndex)}
+                                                className="h-3 w-3 text-blue-600"
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        <OdiaInputField
+                                          as="textarea"
+                                          value={question.explanation}
+                                          onChange={(e) => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'explanation', e.target.value)}
+                                          placeholder="Explanation"
+                                          rows={2}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

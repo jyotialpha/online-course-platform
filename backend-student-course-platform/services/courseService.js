@@ -46,11 +46,15 @@ class CourseService {
       }
       
       // Add chapter PDFs to deletion list
-      if (course.chapters) {
-        course.chapters.forEach(chapter => {
-          if (chapter.pdf) {
-            const url = new URL(chapter.pdf);
-            filesToDelete.push(url.pathname.substring(1));
+      if (course.subjects) {
+        course.subjects.forEach(subject => {
+          if (subject.chapters) {
+            subject.chapters.forEach(chapter => {
+              if (chapter.pdf) {
+                const url = new URL(chapter.pdf);
+                filesToDelete.push(url.pathname.substring(1));
+              }
+            });
           }
         });
       }
@@ -105,7 +109,7 @@ class CourseService {
   }
 
   validateCourseData(courseData, isUpdate = false) {
-    const { title, description, price, chapters } = courseData;
+    const { title, description, price, subjects } = courseData;
 
     if (!isUpdate || title !== undefined) {
       if (!title || typeof title !== 'string' || !title.trim()) {
@@ -130,31 +134,49 @@ class CourseService {
       courseData.isFree = !courseData.price || courseData.price === 0;
     }
 
-    if (!isUpdate || chapters !== undefined) {
-      if (!Array.isArray(chapters) || chapters.length === 0) {
-        throw new Error('At least one chapter is required');
+    if (!isUpdate || subjects !== undefined) {
+      if (!Array.isArray(subjects) || subjects.length === 0) {
+        throw new Error('At least one subject is required');
       }
 
-      chapters.forEach((chapter, index) => {
-        if (!chapter.title || !chapter.questions || !Array.isArray(chapter.questions)) {
-          throw new Error(`Chapter ${index + 1} is missing required fields`);
+      subjects.forEach((subject, subjectIndex) => {
+        if (!subject.title || !subject.chapters || !Array.isArray(subject.chapters)) {
+          throw new Error(`Subject ${subjectIndex + 1} is missing required fields`);
         }
 
-        chapter.questions.forEach((question, qIndex) => {
-          if (!question.question || !Array.isArray(question.options) || 
-              question.correctAnswer === undefined) {
-            throw new Error(`Invalid question format in chapter ${index + 1}, question ${qIndex + 1}`);
+        if (subject.chapters.length === 0) {
+          throw new Error(`Subject ${subjectIndex + 1} must have at least one chapter`);
+        }
+
+        subject.chapters.forEach((chapter, chapterIndex) => {
+          if (!chapter.title || typeof chapter.title !== 'string' || !chapter.title.trim()) {
+            throw new Error(`Chapter ${chapterIndex + 1} in subject ${subjectIndex + 1} is missing title`);
           }
           
-          // Validate that all options are non-empty strings
-          if (question.options.some(option => typeof option !== 'string' || !option.trim())) {
-            throw new Error(`All options must be non-empty in chapter ${index + 1}, question ${qIndex + 1}`);
+          if (!chapter.description || typeof chapter.description !== 'string' || !chapter.description.trim()) {
+            throw new Error(`Chapter ${chapterIndex + 1} in subject ${subjectIndex + 1} is missing description`);
           }
-          
-          // Validate correctAnswer is within bounds
-          if (question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
-            throw new Error(`Invalid correctAnswer index in chapter ${index + 1}, question ${qIndex + 1}`);
+
+          if (!chapter.questions || !Array.isArray(chapter.questions)) {
+            throw new Error(`Chapter ${chapterIndex + 1} in subject ${subjectIndex + 1} must have questions array`);
           }
+
+          chapter.questions.forEach((question, qIndex) => {
+            if (!question.question || !Array.isArray(question.options) || 
+                question.correctAnswer === undefined) {
+              throw new Error(`Invalid question format in subject ${subjectIndex + 1}, chapter ${chapterIndex + 1}, question ${qIndex + 1}`);
+            }
+            
+            // Validate that all options are non-empty strings
+            if (question.options.some(option => typeof option !== 'string' || !option.trim())) {
+              throw new Error(`All options must be non-empty in subject ${subjectIndex + 1}, chapter ${chapterIndex + 1}, question ${qIndex + 1}`);
+            }
+            
+            // Validate correctAnswer is within bounds
+            if (question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
+              throw new Error(`Invalid correctAnswer index in subject ${subjectIndex + 1}, chapter ${chapterIndex + 1}, question ${qIndex + 1}`);
+            }
+          });
         });
       });
     }

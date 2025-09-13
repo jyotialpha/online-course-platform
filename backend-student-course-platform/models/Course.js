@@ -14,13 +14,19 @@ const ChapterSchema = new mongoose.Schema({
   questions: [QuestionSchema]
 });
 
+const SubjectSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  chapters: [ChapterSchema]
+});
+
 const CourseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true, default: 0 },
   isFree: { type: Boolean, default: true },
   thumbnail: { type: String },
-  chapters: [ChapterSchema]
+  subjects: [SubjectSchema]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', CourseSchema);
