@@ -14,6 +14,17 @@ function MyCourses() {
   const [sortBy, setSortBy] = useState('recent');
   const [courseProgress, setCourseProgress] = useState({});
 
+  const getChapterCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.length || 0), 0) || 0;
+  };
+
+  const getQuestionCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.reduce((chTotal, chapter) =>
+        chTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  };
+
   useEffect(() => {
     fetchMyCourses();
   }, []);
@@ -184,7 +195,7 @@ function MyCourses() {
                 
                 {/* Progress Badge */}
                 <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
-                  {course.chapters?.length || 0} chapters
+                  {getChapterCount(course.subjects)} chapters
                 </div>
                 
                 {/* Enrollment Date */}
@@ -234,7 +245,7 @@ function MyCourses() {
                     <div className="flex items-center justify-center mb-1">
                       <BookOpen className="w-4 h-4 text-cyan-400" />
                     </div>
-                    <div className="text-white font-semibold text-sm">{course.chapters?.length || 0}</div>
+                    <div className="text-white font-semibold text-sm">{getChapterCount(course.subjects)}</div>
                     <div className="text-gray-400 text-xs">Chapters</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3 text-center">
@@ -242,8 +253,7 @@ function MyCourses() {
                       <Award className="w-4 h-4 text-purple-400" />
                     </div>
                     <div className="text-white font-semibold text-sm">
-                      {course.chapters?.reduce((total, chapter) => 
-                        total + (chapter.questions?.length || 0), 0) || 0}
+                      {getQuestionCount(course.subjects)}
                     </div>
                     <div className="text-gray-400 text-xs">Questions</div>
                   </div>
@@ -318,15 +328,13 @@ function MyCourses() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-400">
-                  {courses.reduce((total, course) => total + (course.chapters?.length || 0), 0)}
+                  {courses.reduce((total, course) => total + getChapterCount(course.subjects), 0)}
                 </div>
                 <div className="text-sm text-gray-400">Total Chapters</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-400">
-                  {courses.reduce((total, course) => 
-                    total + (course.chapters?.reduce((chTotal, chapter) => 
-                      chTotal + (chapter.questions?.length || 0), 0) || 0), 0)}
+                  {courses.reduce((total, course) => total + getQuestionCount(course.subjects), 0)}
                 </div>
                 <div className="text-sm text-gray-400">Total Questions</div>
               </div>

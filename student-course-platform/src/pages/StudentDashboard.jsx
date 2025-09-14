@@ -15,6 +15,17 @@ function StudentDashboard() {
   const [courseProgress, setCourseProgress] = useState({});
   const [loading, setLoading] = useState(true);
 
+  const getChapterCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.length || 0), 0) || 0;
+  };
+
+  const getQuestionCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.reduce((chTotal, chapter) =>
+        chTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  };
+
   useEffect(() => {
     fetchDashboardData();
     fetchAnalytics();
@@ -281,12 +292,11 @@ function StudentDashboard() {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
                             <BookOpen className="w-3 h-3" />
-                            <span>{course.chapters?.length || 0}</span>
+                            <span>{getChapterCount(course.subjects)}</span>
                           </div>
                           <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
                             <Award className="w-3 h-3" />
-                            <span>{course.chapters?.reduce((total, chapter) => 
-                              total + (chapter.questions?.length || 0), 0) || 0}</span>
+                            <span>{getQuestionCount(course.subjects)}</span>
                           </div>
                         </div>
                       </div>

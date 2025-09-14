@@ -13,6 +13,17 @@ function StudentCourses() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // all, free, paid
 
+  const getChapterCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.length || 0), 0) || 0;
+  };
+
+  const getQuestionCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.reduce((chapterTotal, chapter) =>
+        chapterTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  };
+
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -242,7 +253,7 @@ function StudentCourses() {
                 
                 {/* Chapter Count */}
                 <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
-                  {course.chapters?.length || 0} chapters
+                  {getChapterCount(course.subjects)} chapters
                 </div>
                 
                 {/* Course Stats Overlay */}
@@ -251,15 +262,14 @@ function StudentCourses() {
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <BookOpen className="w-3 h-3" />
-                        <span>{course.chapters?.length || 0}</span>
+                        <span>{getChapterCount(course.subjects)}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Award className="w-3 h-3" />
-                        <span>{course.chapters?.reduce((total, chapter) => 
-                          total + (chapter.questions?.length || 0), 0) || 0}</span>
-                      </div>
-                    </div>
-                  </div>
+                         <Award className="w-3 h-3" />
+                         <span>{getQuestionCount(course.subjects)}</span>
+                       </div>
+                     </div>
+                   </div>
                 </div>
               </div>
               
@@ -279,7 +289,7 @@ function StudentCourses() {
                     <div className="flex items-center justify-center mb-1">
                       <BookOpen className="w-4 h-4 text-cyan-400" />
                     </div>
-                    <div className="text-white font-semibold text-sm">{course.chapters?.length || 0}</div>
+                    <div className="text-white font-semibold text-sm">{getChapterCount(course.subjects)}</div>
                     <div className="text-gray-400 text-xs">Chapters</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3 text-center">
@@ -287,8 +297,7 @@ function StudentCourses() {
                       <Award className="w-4 h-4 text-purple-400" />
                     </div>
                     <div className="text-white font-semibold text-sm">
-                      {course.chapters?.reduce((total, chapter) => 
-                        total + (chapter.questions?.length || 0), 0) || 0}
+                      {getQuestionCount(course.subjects)}
                     </div>
                     <div className="text-gray-400 text-xs">Questions</div>
                   </div>

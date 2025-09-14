@@ -163,9 +163,15 @@ const CourseCard = ({ course, delay }) => {
     return (course.isFree === true || course.price === 0) ? 'Free' : 'Paid';
   };
 
-  const getQuestionCount = (chapters) => {
-    return chapters?.reduce((total, chapter) => 
-      total + (chapter.questions?.length || 0), 0) || 0;
+  const getQuestionCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.reduce((chapterTotal, chapter) =>
+        chapterTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  };
+
+  const getChapterCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.length || 0), 0) || 0;
   };
 
   return (
@@ -206,7 +212,7 @@ const CourseCard = ({ course, delay }) => {
         </div>
         <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg">
           <BookOpen className="w-3 h-3 fill-current" />
-          {course.chapters?.length || 0}
+          {getChapterCount(course.subjects)}
         </div>
         <motion.div
           className="absolute inset-0 bg-black/40 flex items-center justify-center"
@@ -236,11 +242,11 @@ const CourseCard = ({ course, delay }) => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
               <BookOpen className="w-4 h-4" />
-              {course.chapters?.length || 0} chapters
+              {getChapterCount(course.subjects)} chapters
             </span>
             <span className="flex items-center gap-1 hover:text-purple-400 transition-colors">
               <Clock className="w-4 h-4" />
-              {getQuestionCount(course.chapters)} questions
+              {getQuestionCount(course.subjects)} questions
             </span>
           </div>
         </div>
@@ -751,7 +757,7 @@ function Homepage() {
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                           <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-sm font-bold">
-                            {course.chapters?.length || 0} chapters
+                            {getChapterCount(course.subjects)} chapters
                           </div>
                         </div>
                         <div className="p-6">
