@@ -109,21 +109,44 @@ router.post('/protected/student/enroll/:courseId', authenticateToken, restrictTo
 router.get('/protected/student/my-courses', authenticateToken, restrictTo('student'), async (req, res, next) => {
   try {
     const userId = req.user.id;
+    console.log('Fetching my-courses for user:', userId);
+    
     const user = await User.findById(userId).populate('enrolledCourses.courseId');
     
     if (!user) {
+      console.log('User not found:', userId);
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Format enrolled courses with enrollment details
-    const enrolledCourses = user.enrolledCourses.map(enrollment => ({
-      ...enrollment.courseId.toObject(),
-      enrollmentDetails: {
-        enrolledAt: enrollment.enrolledAt,
-        status: enrollment.status,
-        amount: enrollment.amount
-      }
-    }));
+    console.log('User found, enrolled courses count:', user.enrolledCourses.length);
+    
+    // Format enrolled courses with enrollment details, filter out deleted courses
+    const enrolledCourses = user.enrolledCourses
+      .filter(enrollment => {
+        const hasValidCourse = enrollment.courseId && enrollment.courseId._id;
+        if (!hasValidCourse) {
+          console.log('Filtering out null/deleted course for enrollment:', enrollment._id);
+        }
+        return hasValidCourse;
+      })
+      .map(enrollment => {
+        try {
+          return {
+            ...enrollment.courseId.toObject(),
+            enrollmentDetails: {
+              enrolledAt: enrollment.enrolledAt,
+              status: enrollment.status,
+              amount: enrollment.amount
+            }
+          };
+        } catch (mapError) {
+          console.error('Error mapping enrollment:', enrollment._id, mapError);
+          return null;
+        }
+      })
+      .filter(course => course !== null);
+    
+    console.log('Processed enrolled courses count:', enrolledCourses.length);
     
     res.json({
       status: 'success',
@@ -133,7 +156,12 @@ router.get('/protected/student/my-courses', authenticateToken, restrictTo('stude
       }
     });
   } catch (error) {
-    next(error);
+    console.error('Error in my-courses route:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to fetch enrolled courses',
+      error: error.message 
+    });
   }
 });
 
@@ -206,7 +234,66 @@ router.get('/protected/student/course/:courseId/chapter/:chapterIndex', authenti
   }
 });
 
-// Watermarked PDF viewer endpoint
+// Watermarked PDF viewer endpoint - supports both old and new structure
+router.get('/protected/pdf-viewer/:courseId/:subjectIndex/:chapterIndex', async (req, res, next) => {
+  try {
+    const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    
+    if (req.user.role !== 'student' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const { courseId, subjectIndex, chapterIndex } = req.params;
+    const userId = req.user.id;
+    
+    const user = await User.findById(userId);
+    const isEnrolled = user.enrolledCourses.some(enrollment => 
+      enrollment.courseId.toString() === courseId
+    );
+    
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+    
+    const course = await courseService.getCourse(courseId);
+    const chapter = course.subjects?.[parseInt(subjectIndex)]?.chapters?.[parseInt(chapterIndex)];
+    
+    if (!chapter || !chapter.pdf) {
+      return res.status(404).json({ message: 'PDF not found' });
+    }
+    
+    const response = await axios({
+      method: 'GET',
+      url: chapter.pdf,
+      responseType: 'stream'
+    });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="protected.pdf"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('PDF viewer error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    next(error);
+  }
+});
+
+// Legacy PDF viewer endpoint for backward compatibility
 router.get('/protected/pdf-viewer/:courseId/:chapterIndex', async (req, res, next) => {
   try {
     const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
@@ -235,7 +322,22 @@ router.get('/protected/pdf-viewer/:courseId/:chapterIndex', async (req, res, nex
     }
     
     const course = await courseService.getCourse(courseId);
-    const chapter = course.chapters[parseInt(chapterIndex)];
+    // Try new structure first, fallback to old structure
+    let chapter = null;
+    if (course.subjects && course.subjects.length > 0) {
+      // New structure - find chapter by flattening all chapters
+      let flatIndex = parseInt(chapterIndex);
+      for (const subject of course.subjects) {
+        if (flatIndex < subject.chapters.length) {
+          chapter = subject.chapters[flatIndex];
+          break;
+        }
+        flatIndex -= subject.chapters.length;
+      }
+    } else {
+      // Old structure
+      chapter = course.chapters?.[parseInt(chapterIndex)];
+    }
     
     if (!chapter || !chapter.pdf) {
       return res.status(404).json({ message: 'PDF not found' });

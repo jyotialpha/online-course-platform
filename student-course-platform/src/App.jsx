@@ -78,6 +78,14 @@ function AppContent() {
               }
             />
             <Route 
+              path="/student/course/:courseId/subject/:subjectIndex/chapter/:chapterIndex/test" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <MockTest />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
               path="/student/course/:courseId/chapter/:chapterIndex/test" 
               element={
                 <ProtectedRoute allowedRoles={['student']}>

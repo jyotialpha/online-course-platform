@@ -7,7 +7,7 @@ import progressService from '../services/progressService';
 import Swal from 'sweetalert2';
 
 function MockTest() {
-  const { courseId, chapterIndex } = useParams();
+  const { courseId, subjectIndex, chapterIndex } = useParams();
   const navigate = useNavigate();
   const [chapter, setChapter] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -20,7 +20,7 @@ function MockTest() {
 
   useEffect(() => {
     fetchChapter();
-  }, [courseId, chapterIndex]);
+  }, [courseId, subjectIndex, chapterIndex]);
 
   useEffect(() => {
     let timer;
@@ -41,15 +41,38 @@ function MockTest() {
   const fetchChapter = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/protected/student/course/${courseId}/chapter/${chapterIndex}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
       
-      if (response.ok) {
-        const data = await response.json();
-        setChapter(data.data.chapter);
-        // Set timer: 2 minutes per question
-        setTimeLeft(data.data.chapter.questions.length * 120);
+      if (subjectIndex !== undefined) {
+        // New structure: subjects/chapters
+        const response = await fetch(`${API_BASE_URL}/api/protected/student/course/${courseId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const course = data.data.course;
+          const chapter = course.subjects?.[parseInt(subjectIndex)]?.chapters?.[parseInt(chapterIndex)];
+          
+          if (chapter) {
+            setChapter({
+              ...chapter,
+              courseTitle: course.title,
+              subjectTitle: course.subjects[parseInt(subjectIndex)].title
+            });
+            setTimeLeft(chapter.questions.length * 120);
+          }
+        }
+      } else {
+        // Legacy structure: direct chapters (backward compatibility)
+        const response = await fetch(`${API_BASE_URL}/api/protected/student/course/${courseId}/chapter/${chapterIndex}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setChapter(data.data.chapter);
+          setTimeLeft(data.data.chapter.questions.length * 120);
+        }
       }
     } catch (error) {
       console.error('Error fetching chapter:', error);
@@ -77,7 +100,7 @@ function MockTest() {
     // Prepare test result data
     const testResultData = {
       courseId,
-      chapterId: chapterIndex,
+      chapterId: chapter._id,
       score: results.percentage,
       totalQuestions: results.total,
       correctAnswers: results.score,
@@ -94,7 +117,8 @@ function MockTest() {
       await progressService.saveTestResult(testResultData);
       
       // Mark chapter as completed after test
-      await progressService.updateChapterProgress(courseId, chapterIndex, timeSpentSeconds / 60);
+      console.log('Updating chapter progress:', { courseId, chapterId: chapter._id, timeSpent: timeSpentSeconds / 60 });
+      await progressService.updateChapterProgress(courseId, chapter._id, timeSpentSeconds / 60);
       
       // Show success message
       const passed = results.percentage >= 60;
@@ -174,8 +198,10 @@ function MockTest() {
             <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-4">Chapter {parseInt(chapterIndex) + 1} Mock Test</h2>
-            <p className="text-gray-300 mb-6">{chapter?.title}</p>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              {chapter?.subjectTitle ? `${chapter.subjectTitle} - ${chapter.title}` : `Chapter ${parseInt(chapterIndex) + 1} - ${chapter?.title}`}
+            </h2>
+            <p className="text-gray-300 mb-6">Mock Test</p>
             
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-sm">

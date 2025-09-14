@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, Menu, X, RotateCcw } from 'lucide-react';
+import { BookOpen, FileText, HelpCircle, ArrowLeft, ArrowRight, Lock, CheckCircle, Maximize2, Minimize2, Monitor, Smartphone, Menu, X, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import SecurePDFViewer from '../components/student/SecurePDFViewer';
 import progressService from '../services/progressService';
@@ -10,6 +10,7 @@ function CourseLearning() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
+  const [currentSubject, setCurrentSubject] = useState(0);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,6 +18,7 @@ function CourseLearning() {
   const [viewMode, setViewMode] = useState('desktop');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [progress, setProgress] = useState(null);
+  const [expandedSubjects, setExpandedSubjects] = useState({});
 
   useEffect(() => {
     fetchCourse();
@@ -33,6 +35,10 @@ function CourseLearning() {
       if (response.ok) {
         const data = await response.json();
         setCourse(data.data.course);
+        // Expand first subject by default
+        if (data.data.course.subjects?.length > 0) {
+          setExpandedSubjects({ 0: true });
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to load course');
@@ -53,18 +59,27 @@ function CourseLearning() {
     }
   };
 
-  const handleChapterSelect = (index) => {
-    setCurrentChapter(index);
+  const handleChapterSelect = (subjectIndex, chapterIndex) => {
+    setCurrentSubject(subjectIndex);
+    setCurrentChapter(chapterIndex);
     // Mark chapter as accessed even without PDF
-    if (course?.chapters?.[index]?._id) {
-      progressService.updateChapterProgress(courseId, course.chapters[index]._id, 0)
+    const chapter = course?.subjects?.[subjectIndex]?.chapters?.[chapterIndex];
+    if (chapter?._id) {
+      progressService.updateChapterProgress(courseId, chapter._id, 0)
         .catch(error => console.error('Failed to mark chapter access:', error));
     }
     setTimeout(() => fetchProgress(), 1000);
   };
 
-  const handleStartMockTest = (chapterIndex) => {
-    navigate(`/student/course/${courseId}/chapter/${chapterIndex}/test`);
+  const toggleSubject = (subjectIndex) => {
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [subjectIndex]: !prev[subjectIndex]
+    }));
+  };
+
+  const handleStartMockTest = () => {
+    navigate(`/student/course/${courseId}/subject/${currentSubject}/chapter/${currentChapter}/test`);
   };
 
   if (loading) {
@@ -107,7 +122,9 @@ function CourseLearning() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <h1 className="text-lg lg:text-xl font-bold text-white truncate">{course?.title}</h1>
-                  <p className="text-gray-400 text-xs lg:text-sm">Chapter {currentChapter + 1} of {course?.chapters?.length}</p>
+                  <p className="text-gray-400 text-xs lg:text-sm">
+                    {course?.subjects?.[currentSubject]?.title} - Chapter {currentChapter + 1}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -172,31 +189,47 @@ function CourseLearning() {
             <div className="space-y-2">
               <h4 className="text-white font-medium mb-3 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-cyan-400" />
-                Chapters
+                Course Content
               </h4>
-              {course?.chapters?.map((chapter, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    handleChapterSelect(index);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full text-left p-3 rounded-xl transition-all ${
-                    currentChapter === index
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30'
-                      : 'hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-sm">Chapter {index + 1}</p>
-                      <p className="text-gray-400 text-xs truncate">{chapter.title}</p>
+              {course?.subjects?.map((subject, subjectIndex) => (
+                <div key={subjectIndex} className="space-y-1">
+                  <button
+                    onClick={() => toggleSubject(subjectIndex)}
+                    className="w-full text-left p-2 bg-blue-500/20 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-medium text-sm">{subject.title}</span>
+                      {expandedSubjects[subjectIndex] ? (
+                        <ChevronUp className="w-4 h-4 text-blue-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-blue-400" />
+                      )}
                     </div>
-                    <CheckCircle className={`w-4 h-4 ${
-                      progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
-                    }`} />
-                  </div>
-                </button>
+                  </button>
+                  {expandedSubjects[subjectIndex] && subject.chapters?.map((chapter, chapterIndex) => (
+                    <button
+                      key={chapterIndex}
+                      onClick={() => {
+                        handleChapterSelect(subjectIndex, chapterIndex);
+                        setShowMobileMenu(false);
+                      }}
+                      className={`w-full text-left p-2 ml-4 rounded-lg transition-all ${
+                        currentSubject === subjectIndex && currentChapter === chapterIndex
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30'
+                          : 'hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-300 text-xs truncate">{chapter.title}</p>
+                        </div>
+                        <CheckCircle className={`w-3 h-3 ${
+                          progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
+                        }`} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -214,26 +247,42 @@ function CourseLearning() {
                   Course Content
                 </h3>
                 <div className="space-y-2">
-                  {course?.chapters?.map((chapter, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleChapterSelect(index)}
-                      className={`w-full text-left p-3 rounded-xl transition-all ${
-                        currentChapter === index
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30'
-                          : 'hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-white font-medium text-sm">Chapter {index + 1}</p>
-                          <p className="text-gray-400 text-xs truncate">{chapter.title}</p>
+                  {course?.subjects?.map((subject, subjectIndex) => (
+                    <div key={subjectIndex} className="space-y-1">
+                      <button
+                        onClick={() => toggleSubject(subjectIndex)}
+                        className="w-full text-left p-3 bg-blue-500/20 rounded-xl border border-blue-500/30 hover:bg-blue-500/30 transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-medium">{subject.title}</span>
+                          {expandedSubjects[subjectIndex] ? (
+                            <ChevronUp className="w-4 h-4 text-blue-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-blue-400" />
+                          )}
                         </div>
-                        <CheckCircle className={`w-4 h-4 ${
-                          progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
-                        }`} />
-                      </div>
-                    </button>
+                      </button>
+                      {expandedSubjects[subjectIndex] && subject.chapters?.map((chapter, chapterIndex) => (
+                        <button
+                          key={chapterIndex}
+                          onClick={() => handleChapterSelect(subjectIndex, chapterIndex)}
+                          className={`w-full text-left p-2 ml-4 rounded-lg transition-all ${
+                            currentSubject === subjectIndex && currentChapter === chapterIndex
+                              ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30'
+                              : 'hover:bg-white/10'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-300 text-sm">{chapter.title}</p>
+                            </div>
+                            <CheckCircle className={`w-4 h-4 ${
+                              progress?.completedChapters?.includes(chapter._id) ? 'text-green-400' : 'text-gray-500'
+                            }`} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -242,9 +291,9 @@ function CourseLearning() {
 
           {/* Main Content */}
           <div className={isFullscreen ? 'col-span-full' : 'col-span-1 lg:col-span-3'}>
-            {course?.chapters?.[currentChapter] && (
+            {course?.subjects?.[currentSubject]?.chapters?.[currentChapter] && (
               <motion.div
-                key={currentChapter}
+                key={`${currentSubject}-${currentChapter}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
@@ -252,9 +301,9 @@ function CourseLearning() {
                 {/* Chapter Header */}
                 <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
                   <h2 className="text-2xl font-bold text-white mb-2">
-                    Chapter {currentChapter + 1}: {course.chapters[currentChapter].title}
+                    {course.subjects[currentSubject].title}: {course.subjects[currentSubject].chapters[currentChapter].title}
                   </h2>
-                  <p className="text-gray-300">{course.chapters[currentChapter].description}</p>
+                  <p className="text-gray-300">{course.subjects[currentSubject].chapters[currentChapter].description}</p>
                 </div>
 
                 {/* PDF Viewer */}
@@ -267,7 +316,7 @@ function CourseLearning() {
                       <h3 className="text-lg font-semibold text-white">Study Material</h3>
                     </div>
                     
-                    {course.chapters[currentChapter].pdf && (
+                    {course.subjects[currentSubject].chapters[currentChapter].pdf && (
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* View Mode Toggle - Hidden on mobile */}
                         <div className="hidden lg:flex bg-gray-700 rounded-lg p-1">
@@ -305,13 +354,13 @@ function CourseLearning() {
                     )}
                   </div>
                   
-                  {course.chapters[currentChapter].pdf ? (
+                  {course.subjects[currentSubject].chapters[currentChapter].pdf ? (
                     <div>
                       <SecurePDFViewer
-                        pdfUrl={`${API_BASE_URL}/api/protected/pdf-viewer/${courseId}/${currentChapter}?token=${localStorage.getItem('token')}`}
+                        pdfUrl={`${API_BASE_URL}/api/protected/pdf-viewer/${courseId}/${currentSubject}/${currentChapter}?token=${localStorage.getItem('token')}`}
                         className={isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-[calc(100vh-200px)] lg:min-h-[400px]'}
                         courseId={courseId}
-                        chapterId={course.chapters[currentChapter]._id}
+                        chapterId={course.subjects[currentSubject].chapters[currentChapter]._id}
                       />
                       <div className="p-2 lg:p-4 bg-gray-900/50 backdrop-blur-sm">
                         <div className="flex items-center justify-between">
@@ -320,7 +369,7 @@ function CourseLearning() {
                             <span className="hidden sm:inline">Protected content - </span>View only
                           </p>
                           <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <span>Chapter {currentChapter + 1}/{course?.chapters?.length}</span>
+                            <span>Chapter {currentChapter + 1}/{course.subjects[currentSubject].chapters.length}</span>
                           </div>
                         </div>
                       </div>
@@ -345,14 +394,14 @@ function CourseLearning() {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1">
                       <p className="text-gray-300 mb-2 text-sm lg:text-base">
-                        Test your knowledge with {course.chapters[currentChapter].questions?.length || 0} questions
+                        Test your knowledge with {course.subjects[currentSubject].chapters[currentChapter].questions?.length || 0} questions
                       </p>
                       <p className="text-gray-400 text-xs lg:text-sm">
                         Complete the reading material before attempting the test
                       </p>
                     </div>
                     <button
-                      onClick={() => handleStartMockTest(currentChapter)}
+                      onClick={handleStartMockTest}
                       className="w-full lg:w-auto px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       <HelpCircle className="w-4 h-4" />
@@ -365,16 +414,30 @@ function CourseLearning() {
                 {!isFullscreen && (
                   <div className="flex flex-col lg:flex-row gap-3 lg:justify-between">
                     <button
-                      onClick={() => setCurrentChapter(Math.max(0, currentChapter - 1))}
-                      disabled={currentChapter === 0}
+                      onClick={() => {
+                        if (currentChapter > 0) {
+                          setCurrentChapter(currentChapter - 1);
+                        } else if (currentSubject > 0) {
+                          setCurrentSubject(currentSubject - 1);
+                          setCurrentChapter(course.subjects[currentSubject - 1].chapters.length - 1);
+                        }
+                      }}
+                      disabled={currentSubject === 0 && currentChapter === 0}
                       className="w-full lg:w-auto px-6 py-3 bg-white/10 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all flex items-center justify-center gap-2"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Previous Chapter
                     </button>
                     <button
-                      onClick={() => setCurrentChapter(Math.min(course.chapters.length - 1, currentChapter + 1))}
-                      disabled={currentChapter === course.chapters.length - 1}
+                      onClick={() => {
+                        if (currentChapter < course.subjects[currentSubject].chapters.length - 1) {
+                          setCurrentChapter(currentChapter + 1);
+                        } else if (currentSubject < course.subjects.length - 1) {
+                          setCurrentSubject(currentSubject + 1);
+                          setCurrentChapter(0);
+                        }
+                      }}
+                      disabled={currentSubject === course.subjects.length - 1 && currentChapter === course.subjects[currentSubject].chapters.length - 1}
                       className="w-full lg:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-cyan-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2"
                     >
                       Next Chapter

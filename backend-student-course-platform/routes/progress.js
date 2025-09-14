@@ -54,9 +54,21 @@ router.post('/progress/chapter', authenticateToken, async (req, res) => {
     // Calculate overall progress
     const course = await Course.findById(courseId);
     if (course) {
-      const totalChapters = course.chapters.length;
+      let totalChapters = 0;
+      if (course.subjects && course.subjects.length > 0) {
+        // New structure: count chapters across all subjects
+        totalChapters = course.subjects.reduce((total, subject) => {
+          return total + (subject.chapters ? subject.chapters.length : 0);
+        }, 0);
+      } else if (course.chapters) {
+        // Legacy structure
+        totalChapters = course.chapters.length;
+      }
+      
       const completedChapters = enrolledCourse.progress.completedChapters.length;
-      enrolledCourse.progress.overallProgress = Math.min(100, Math.round((completedChapters / totalChapters) * 100));
+      enrolledCourse.progress.overallProgress = totalChapters > 0 
+        ? Math.min(100, Math.round((completedChapters / totalChapters) * 100))
+        : 0;
     }
 
     await user.save();
@@ -127,7 +139,7 @@ router.get('/progress/:courseId', authenticateToken, async (req, res) => {
     }
 
     const enrolledCourse = user.enrolledCourses.find(
-      course => course.courseId._id.toString() === courseId
+      course => course.courseId && course.courseId._id && course.courseId._id.toString() === courseId
     );
 
     if (!enrolledCourse) {
@@ -237,7 +249,7 @@ router.get('/analytics', authenticateToken, async (req, res) => {
     // Calculate analytics
     const totalCourses = user.enrolledCourses.length;
     const completedCourses = user.enrolledCourses.filter(
-      course => course.progress && course.progress.overallProgress === 100
+      course => course.courseId && course.progress && course.progress.overallProgress === 100
     ).length;
 
     const totalTestsTaken = filteredTests.length;
@@ -245,9 +257,9 @@ router.get('/analytics', authenticateToken, async (req, res) => {
       ? Math.round(filteredTests.reduce((sum, test) => sum + test.score, 0) / totalTestsTaken)
       : 0;
 
-    const totalTimeSpent = user.enrolledCourses.reduce(
-      (total, course) => total + (course.progress?.timeSpent || 0), 0
-    );
+    const totalTimeSpent = user.enrolledCourses
+      .filter(course => course.courseId)
+      .reduce((total, course) => total + (course.progress?.timeSpent || 0), 0);
 
     // Recent activity (last 7 days)
     const sevenDaysAgo = new Date();
@@ -258,24 +270,26 @@ router.get('/analytics', authenticateToken, async (req, res) => {
     ).length;
 
     // Performance by course (filtered by time range)
-    const coursePerformance = user.enrolledCourses.map(enrollment => {
-      const courseTests = filteredTests.filter(
-        test => test.courseId.toString() === enrollment.courseId._id.toString()
-      );
-      
-      const avgScore = courseTests.length > 0
-        ? Math.round(courseTests.reduce((sum, test) => sum + test.score, 0) / courseTests.length)
-        : 0;
+    const coursePerformance = user.enrolledCourses
+      .filter(enrollment => enrollment.courseId && enrollment.courseId._id) // Filter out null courses
+      .map(enrollment => {
+        const courseTests = filteredTests.filter(
+          test => test.courseId.toString() === enrollment.courseId._id.toString()
+        );
+        
+        const avgScore = courseTests.length > 0
+          ? Math.round(courseTests.reduce((sum, test) => sum + test.score, 0) / courseTests.length)
+          : 0;
 
-      return {
-        courseId: enrollment.courseId._id,
-        courseName: enrollment.courseId.title,
-        progress: Math.min(100, enrollment.progress?.overallProgress || 0),
-        testsCompleted: courseTests.length,
-        averageScore: avgScore,
-        timeSpent: enrollment.progress?.timeSpent || 0
-      };
-    });
+        return {
+          courseId: enrollment.courseId._id,
+          courseName: enrollment.courseId.title,
+          progress: Math.min(100, enrollment.progress?.overallProgress || 0),
+          testsCompleted: courseTests.length,
+          averageScore: avgScore,
+          timeSpent: enrollment.progress?.timeSpent || 0
+        };
+      });
 
     res.json({
       success: true,

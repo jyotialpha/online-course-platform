@@ -18,7 +18,9 @@ class ProgressService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update chapter progress');
+        const errorData = await response.text();
+        console.error('Progress update failed:', response.status, errorData);
+        throw new Error(`Failed to update chapter progress: ${response.status}`);
       }
 
       return await response.json();
