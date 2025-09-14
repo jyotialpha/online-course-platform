@@ -35,12 +35,13 @@ function CourseForm() {
             description: '',
             pdf: null,
             questions: [
-              {
-                question: '',
-                options: ['', '', '', ''],
-                correctAnswer: 0,
-                explanation: ''
-              }
+            {
+            question: '',
+            questionImage: null,
+            options: ['', '', '', ''],
+            correctAnswer: 0,
+            explanation: ''
+            }
             ]
           }
         ]
@@ -104,17 +105,44 @@ function CourseForm() {
                   pdfUrl = pdfData.data.url;
                 }
               }
+
+              // Process questions with image uploads
+              const processedQuestions = await Promise.all(
+                ch.questions.map(async (q) => {
+                  let questionImageUrl = null;
+                  
+                  // Upload question image if exists
+                  if (q.questionImage) {
+                    const questionImageFormData = new FormData();
+                    questionImageFormData.append('questionImage', q.questionImage);
+                    
+                    const questionImageRes = await fetch(`${API_BASE_URL}/api/upload/question-image`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}` },
+                      body: questionImageFormData
+                    });
+                    
+                    if (questionImageRes.ok) {
+                      const questionImageData = await questionImageRes.json();
+                      questionImageUrl = questionImageData.data.url;
+                    }
+                  }
+                  
+                  return {
+                    question: q.question,
+                    questionImage: questionImageUrl,
+                    options: q.options,
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation
+                  };
+                })
+              );
               
               return {
                 title: ch.title,
                 description: ch.description,
                 pdf: pdfUrl,
-                questions: ch.questions.map(q => ({
-                  question: q.question,
-                  options: q.options,
-                  correctAnswer: q.correctAnswer,
-                  explanation: q.explanation
-                }))
+                questions: processedQuestions
               };
             })
           );
@@ -259,6 +287,7 @@ function CourseForm() {
               questions: [
                 {
                   question: '',
+                  questionImage: null,
                   options: ['', '', '', ''],
                   correctAnswer: 0,
                   explanation: ''
@@ -401,6 +430,14 @@ function CourseForm() {
       ...prev,
       thumbnail: file
     }));
+  };
+
+  const handleQuestionImageUpload = (subjectIndex, chapterIndex, questionIndex, file) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage = file;
+      return { ...prev, subjects: updatedSubjects };
+    });
   };
 
   const handleBulkUpload = (subjectIndex, chapterIndex, file) => {
@@ -970,6 +1007,7 @@ Explanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
                                     {expandedQuestions[questionKey] === questionIndex && (
                                       <div className="p-3 pt-0 space-y-2">
                                         <div>
+                                          <label className="block text-xs font-medium text-gray-700 mb-1">Question Text</label>
                                           <input
                                             type="text"
                                             value={question.question}
@@ -978,6 +1016,67 @@ Explanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
                                             placeholder="Enter question text"
                                             required
                                           />
+                                        </div>
+
+                                        {/* Question Image Upload */}
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
+                                            <ImageIcon className="h-3 w-3 mr-1 text-blue-600" />
+                                            Question Image (Optional)
+                                          </label>
+                                          <div className="space-y-2">
+                                            <div className="flex items-center space-x-3">
+                                              <label className="cursor-pointer bg-white py-1.5 px-3 border border-gray-300 rounded-md shadow-sm text-xs leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                                <span className="flex items-center">
+                                                  <ImageIcon className="h-3 w-3 mr-1" />
+                                                  Choose Image
+                                                </span>
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="sr-only"
+                                                  onChange={(e) => handleQuestionImageUpload(subjectIndex, chapterIndex, questionIndex, e.target.files[0])}
+                                                />
+                                              </label>
+                                              {question.questionImage && (
+                                                <span className="text-xs text-gray-600">
+                                                  {question.questionImage.name} ({(question.questionImage.size / 1024).toFixed(1)} KB)
+                                                </span>
+                                              )}
+                                            </div>
+                                            
+                                            {question.questionImage && (
+                                              <div className="flex items-center space-x-2">
+                                                <div className="w-16 h-16 border-2 border-gray-200 rounded-md overflow-hidden bg-gray-50 flex items-center justify-center">
+                                                  <img
+                                                    src={URL.createObjectURL(question.questionImage)}
+                                                    alt="Question image preview"
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                                </div>
+                                                <div className="flex-1">
+                                                  <p className="text-xs text-gray-600">
+                                                    <strong>File:</strong> {question.questionImage.name}
+                                                  </p>
+                                                  <p className="text-xs text-gray-500">
+                                                    <strong>Size:</strong> {(question.questionImage.size / 1024).toFixed(1)} KB
+                                                  </p>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleQuestionImageUpload(subjectIndex, chapterIndex, questionIndex, null)}
+                                                  className="text-red-500 hover:text-red-700 p-1"
+                                                  title="Remove image"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </button>
+                                              </div>
+                                            )}
+                                            
+                                            <p className="text-xs text-gray-500">
+                                              Recommended: Clear image (max 5MB), JPG, PNG, or WebP format
+                                            </p>
+                                          </div>
                                         </div>
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

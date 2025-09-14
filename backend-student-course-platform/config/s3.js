@@ -11,8 +11,6 @@ const s3Client = new S3Client({
   },
 });
 
-
-
 // Multer S3 storage for course thumbnails
 const thumbnailUpload = multer({
   storage: multerS3({
@@ -55,4 +53,25 @@ const pdfUpload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
-module.exports = { s3Client, thumbnailUpload, pdfUpload };
+// Multer S3 storage for question images
+const questionImageUpload = multer({
+  storage: multerS3({
+    s3: s3Client,
+    bucket: process.env.S3_BUCKET_NAME || 'jyoti-onlie-course',
+    key: function (req, file, cb) {
+      const fileName = `question-images/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+      cb(null, fileName);
+    },
+    contentType: multerS3.AUTO_CONTENT_TYPE
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files allowed'), false);
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+module.exports = { s3Client, thumbnailUpload, pdfUpload, questionImageUpload };

@@ -134,14 +134,14 @@ function CourseEditForm() {
         }
       }
 
-      // Process subjects with chapters and PDFs
+      // Process subjects with chapters, PDFs, and question images
       const processedSubjects = await Promise.all(
         formData.subjects.map(async (subject, subjectIndex) => {
           const processedChapters = await Promise.all(
             subject.chapters.map(async (ch, chapterIndex) => {
               // Handle PDF - check if it was removed or if new file uploaded
               let pdfUrl = null;
-              
+
               // If chapter has existing PDF string, use it
               if (ch.pdf && typeof ch.pdf === 'string') {
                 pdfUrl = ch.pdf;
@@ -150,7 +150,7 @@ function CourseEditForm() {
               else if (!ch.pdf && currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.pdf) {
                 pdfUrl = currentCourse.subjects[subjectIndex].chapters[chapterIndex].pdf;
               }
-              
+
               // If it's a new file (File object), upload it
               if (ch.pdf && typeof ch.pdf === 'object' && ch.pdf.name) {
                 // Delete old PDF if exists
@@ -168,36 +168,88 @@ function CourseEditForm() {
                     console.log('Failed to delete old PDF:', error);
                   }
                 }
-                
+
                 const pdfFormData = new FormData();
                 pdfFormData.append('pdf', ch.pdf);
-                
+
                 const pdfRes = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
                   method: 'POST',
                   headers: { 'Authorization': `Bearer ${token}` },
                   body: pdfFormData
                 });
-                
+
                 if (pdfRes.ok) {
                   const pdfData = await pdfRes.json();
                   pdfUrl = pdfData.data.url;
                 }
               }
-              
+
+              // Process questions with question images
+              const processedQuestions = await Promise.all(
+                ch.questions.map(async (q, questionIndex) => {
+                  let questionImageUrl = null;
+
+                  // If question has existing image string, use it
+                  if (q.questionImage && typeof q.questionImage === 'string') {
+                    questionImageUrl = q.questionImage;
+                  }
+                  // If no image in question but exists in current course, use current
+                  else if (!q.questionImage && currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.questions?.[questionIndex]?.questionImage) {
+                    questionImageUrl = currentCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage;
+                  }
+
+                  // If it's a new file (File object), upload it
+                  if (q.questionImage && typeof q.questionImage === 'object' && q.questionImage.name) {
+                    // Delete old question image if exists
+                    if (currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.questions?.[questionIndex]?.questionImage) {
+                      try {
+                        await fetch(`${API_BASE_URL}/api/upload/delete-file`, {
+                          method: 'DELETE',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ fileUrl: currentCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage })
+                        });
+                      } catch (error) {
+                        console.log('Failed to delete old question image:', error);
+                      }
+                    }
+
+                    const questionImageFormData = new FormData();
+                    questionImageFormData.append('questionImage', q.questionImage);
+
+                    const questionImageRes = await fetch(`${API_BASE_URL}/api/upload/question-image`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}` },
+                      body: questionImageFormData
+                    });
+
+                    if (questionImageRes.ok) {
+                      const questionImageData = await questionImageRes.json();
+                      questionImageUrl = questionImageData.data.url;
+                    }
+                  }
+
+                  return {
+                    question: q.question,
+                    questionImage: questionImageUrl,
+                    options: q.options,
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation
+                  };
+                })
+              );
+
               return {
                 title: ch.title,
                 description: ch.description,
                 pdf: pdfUrl,
-                questions: ch.questions.map(q => ({
-                  question: q.question,
-                  options: q.options,
-                  correctAnswer: q.correctAnswer,
-                  explanation: q.explanation
-                }))
+                questions: processedQuestions
               };
             })
           );
-          
+
           return {
             title: subject.title,
             description: subject.description,
@@ -321,6 +373,7 @@ function CourseEditForm() {
               questions: [
                 {
                   question: '',
+                  questionImage: null,
                   options: ['', '', '', ''],
                   correctAnswer: 0,
                   explanation: ''
@@ -344,6 +397,7 @@ function CourseEditForm() {
         questions: [
           {
             question: '',
+            questionImage: null,
             options: ['', '', '', ''],
             correctAnswer: 0,
             explanation: ''
@@ -401,6 +455,7 @@ function CourseEditForm() {
       const updatedSubjects = [...prev.subjects];
       updatedSubjects[subjectIndex].chapters[chapterIndex].questions.push({
         question: '',
+        questionImage: null,
         options: ['', '', '', ''],
         correctAnswer: 0,
         explanation: ''
@@ -465,6 +520,14 @@ function CourseEditForm() {
       ...prev,
       thumbnail: file
     }));
+  };
+
+  const handleQuestionImageUpload = (subjectIndex, chapterIndex, questionIndex, file) => {
+    setFormData(prev => {
+      const updatedSubjects = [...prev.subjects];
+      updatedSubjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage = file;
+      return { ...prev, subjects: updatedSubjects };
+    });
   };
 
   if (loading) {
@@ -1013,7 +1076,159 @@ function CourseEditForm() {
                                           rows={2}
                                           required
                                         />
-                                        
+
+                                        {/* Question Image Upload */}
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-700 mb-1">Question Image</label>
+                                          <div className="space-y-2">
+                                            {/* Show current question image if exists */}
+                                            {!question.questionImage && currentCourse?.subjects?.[subjectIndex]?.chapters?.[chapterIndex]?.questions?.[questionIndex]?.questionImage && (
+                                              <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <span className="text-xs font-medium text-gray-700">Current Question Image</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const updatedCourse = { ...currentCourse };
+                                                      if (!updatedCourse.subjects[subjectIndex].chapters[chapterIndex].questions) {
+                                                        updatedCourse.subjects[subjectIndex].chapters[chapterIndex].questions = [];
+                                                      }
+                                                      updatedCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex] = {
+                                                        ...updatedCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex],
+                                                        questionImage: null
+                                                      };
+                                                      setCurrentCourse(updatedCourse);
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 text-xs"
+                                                    title="Remove current question image"
+                                                  >
+                                                    Remove
+                                                  </button>
+                                                </div>
+                                                <div className="flex items-center space-x-3">
+                                                  <div className="w-16 h-16 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                                    <img
+                                                      src={currentCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage}
+                                                      alt="Current question image"
+                                                      className="w-full h-full object-cover"
+                                                      onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'flex';
+                                                      }}
+                                                    />
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400" style={{display: 'none'}}>
+                                                      <ImageIcon className="h-6 w-6" />
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <p className="text-xs text-gray-600">Current question image</p>
+                                                    <a
+                                                      href={currentCourse.subjects[subjectIndex].chapters[chapterIndex].questions[questionIndex].questionImage}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-blue-600 hover:text-blue-800 text-xs"
+                                                    >
+                                                      View Full Size
+                                                    </a>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Show current question image if it's a string (existing) */}
+                                            {question.questionImage && typeof question.questionImage === 'string' && (
+                                              <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <span className="text-xs font-medium text-gray-700">Current Question Image</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'questionImage', null)}
+                                                    className="text-red-500 hover:text-red-700 text-xs"
+                                                    title="Remove question image"
+                                                  >
+                                                    Remove
+                                                  </button>
+                                                </div>
+                                                <div className="flex items-center space-x-3">
+                                                  <div className="w-16 h-16 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                                    <img
+                                                      src={question.questionImage}
+                                                      alt="Current question image"
+                                                      className="w-full h-full object-cover"
+                                                      onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'flex';
+                                                      }}
+                                                    />
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400" style={{display: 'none'}}>
+                                                      <ImageIcon className="h-6 w-6" />
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <p className="text-xs text-gray-600">Current question image</p>
+                                                    <a
+                                                      href={question.questionImage}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-blue-600 hover:text-blue-800 text-xs"
+                                                    >
+                                                      View Full Size
+                                                    </a>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            <div className="flex items-center space-x-2">
+                                              <label className="cursor-pointer bg-white py-1 px-2 border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50">
+                                                <span>{question.questionImage ? 'Change Image' : 'Choose Image'}</span>
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="sr-only"
+                                                  onChange={(e) => handleQuestionImageUpload(subjectIndex, chapterIndex, questionIndex, e.target.files[0])}
+                                                />
+                                              </label>
+                                              {question.questionImage && typeof question.questionImage === 'object' && (
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="text-xs text-gray-600">
+                                                    New: {question.questionImage.name}
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleQuestionChange(subjectIndex, chapterIndex, questionIndex, 'questionImage', null)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                    title="Remove new question image"
+                                                  >
+                                                    <Trash2 className="h-3 w-3" />
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Show new question image preview */}
+                                            {question.questionImage && typeof question.questionImage === 'object' && (
+                                              <div className="flex items-center space-x-3">
+                                                <div className="w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                                                  <img
+                                                    src={URL.createObjectURL(question.questionImage)}
+                                                    alt="New question image preview"
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                                </div>
+                                                <div className="flex-1">
+                                                  <p className="text-sm text-gray-600">
+                                                    <strong>New File:</strong> {question.questionImage.name}
+                                                  </p>
+                                                  <p className="text-sm text-gray-500">
+                                                    <strong>Size:</strong> {(question.questionImage.size / 1024).toFixed(2)} KB
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-1">
                                           {question.options?.map((option, optionIndex) => (
                                             <div key={optionIndex} className="flex items-center space-x-1">

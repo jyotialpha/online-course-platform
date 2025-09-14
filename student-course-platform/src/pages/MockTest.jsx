@@ -299,6 +299,19 @@ function MockTest() {
                       </div>
                       <div className="flex-1">
                         <p className="text-white font-medium mb-2">Q{index + 1}. {question.question}</p>
+                        
+                        {/* Question Image in Results */}
+                        {question.questionImage && (
+                          <div className="my-3">
+                            <img
+                              src={question.questionImage}
+                              alt="Question illustration"
+                              className="max-w-full h-auto rounded-lg"
+                              style={{ maxHeight: '200px' }}
+                            />
+                          </div>
+                        )}
+                        
                         <div className="space-y-1 text-sm">
                           <p className="text-green-400">✓ Correct: {question.options[question.correctAnswer]}</p>
                           {userAnswer !== undefined && userAnswer !== question.correctAnswer && (
@@ -379,9 +392,23 @@ function MockTest() {
             <h2 className="text-2xl font-bold text-white mb-4">
               Question {currentQuestion + 1}
             </h2>
-            <p className="text-gray-300 text-lg leading-relaxed">
+            <p className="text-gray-300 text-lg leading-relaxed mb-4">
               {currentQ?.question}
             </p>
+            
+            {/* Question Image */}
+            {currentQ?.questionImage && (
+              <div className="mt-4 mb-6">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <img
+                    src={currentQ.questionImage}
+                    alt="Question illustration"
+                    className="max-w-full h-auto rounded-lg mx-auto"
+                    style={{ maxHeight: '400px' }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Options */}

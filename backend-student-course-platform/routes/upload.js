@@ -1,5 +1,5 @@
 const express = require('express');
-const { thumbnailUpload, pdfUpload } = require('../config/s3');
+const { thumbnailUpload, pdfUpload, questionImageUpload } = require('../config/s3');
 const { authenticateToken, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
@@ -116,6 +116,32 @@ router.post('/pdf',
       }
       
 
+      res.json({
+        status: 'success',
+        data: {
+          url: req.file.location,
+          key: req.file.key
+        }
+      });
+    });
+  }
+);
+
+// Upload question image
+router.post('/question-image', 
+  authenticateToken, 
+  restrictTo('admin'), 
+  (req, res) => {
+    questionImageUpload.single('questionImage')(req, res, (err) => {
+      if (err) {
+        console.error('Question image upload error:', err);
+        return res.status(500).json({ message: err.message });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      
       res.json({
         status: 'success',
         data: {

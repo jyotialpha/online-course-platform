@@ -12,7 +12,8 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Image as ImageIcon
 } from 'lucide-react';
 
 function CourseView() {
@@ -312,6 +313,30 @@ function CourseView() {
                                                 Question {questionIndex + 1}
                                               </h6>
                                               <p className="text-gray-700 text-sm">{question.question}</p>
+                                              
+                                              {/* Question Image Display */}
+                                              {question.questionImage && (
+                                                <div className="mt-2 mb-3">
+                                                  <div className="bg-white rounded-lg p-2 border border-gray-200">
+                                                    <img
+                                                      src={question.questionImage}
+                                                      alt="Question illustration"
+                                                      className="max-w-full h-auto rounded-md mx-auto"
+                                                      style={{ maxHeight: '200px' }}
+                                                      onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'flex';
+                                                      }}
+                                                    />
+                                                    <div className="w-full h-32 flex items-center justify-center text-gray-400 bg-gray-50 rounded-md" style={{display: 'none'}}>
+                                                      <div className="text-center">
+                                                        <ImageIcon className="h-8 w-8 mx-auto mb-2" />
+                                                        <p className="text-xs">Image not available</p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
                                             </div>
                                             
                                             <div className="space-y-1 mb-2">

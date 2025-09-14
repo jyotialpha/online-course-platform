@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const QuestionSchema = new mongoose.Schema({
   question: { type: String, required: true },
+  questionImage: { type: String }, // URL for question image
   options: [{ type: String, required: true }],
   correctAnswer: { type: Number, required: true },
   explanation: { type: String }
