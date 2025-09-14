@@ -458,6 +458,17 @@ function Homepage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  const getQuestionCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.reduce((chapterTotal, chapter) =>
+        chapterTotal + (chapter.questions?.length || 0), 0) || 0), 0) || 0;
+  };
+
+  const getChapterCount = (subjects) => {
+    return subjects?.reduce((total, subject) =>
+      total + (subject.chapters?.length || 0), 0) || 0;
+  };
+
   useEffect(() => {
     setIsLoaded(true);
     fetchCourses();
