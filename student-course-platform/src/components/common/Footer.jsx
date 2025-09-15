@@ -47,6 +47,7 @@ function Footer() {
             <h3 className="text-xl font-semibold text-white mb-4">Quick Links</h3>
             <div className="flex flex-col space-y-2">
               {[
+                { label: 'About Us', href: '/about' },
                 { label: 'Cancellation & Refund', href: '/cancellation-refund' },
                 { label: 'Terms & Conditions', href: '/terms-conditions' },
                 { label: 'Shipping', href: '/shipping' },

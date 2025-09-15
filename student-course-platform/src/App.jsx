@@ -26,6 +26,7 @@ import TermsConditions from './pages/TermsConditions';
 import Shipping from './pages/Shipping';
 import Privacy from './pages/Privacy';
 import ContactUs from './pages/ContactUs';
+import About from './pages/About';
 
 function AppContent() {
   const { user } = useAuth();
@@ -142,7 +143,7 @@ function AppContent() {
             <Route 
               path="/admin/upload-pdf" 
               element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <ProtectedRoute allowedRoles={['admin']} >
                   <PDFUploadForm />
                 </ProtectedRoute>
               }
@@ -155,6 +156,7 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/about" element={<About />} />
             <Route path="/cancellation-refund" element={<CancellationRefund />} />
             <Route path="/terms-conditions" element={<TermsConditions />} />
             <Route path="/shipping" element={<Shipping />} />
