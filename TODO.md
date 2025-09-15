@@ -1,0 +1,4 @@
+- [x] Create ContactUs.jsx page with email team@mockved.com
+- [x] Add routes in App.jsx for /cancellation-refund, /terms-conditions, /shipping, /privacy, /contact-us
+- [x] Update Footer.jsx Quick Links to link to these routes
+- [ ] Test the links

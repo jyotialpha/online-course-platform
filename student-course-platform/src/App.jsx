@@ -21,6 +21,11 @@ import PDFUploadForm from './components/admin/PDFUploadForm';
 import MockTestForm from './components/admin/MockTestForm';
 import Login from './pages/Login';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import CancellationRefund from './pages/CancellationRefund';
+import TermsConditions from './pages/TermsConditions';
+import Shipping from './pages/Shipping';
+import Privacy from './pages/Privacy';
+import ContactUs from './pages/ContactUs';
 
 function AppContent() {
   const { user } = useAuth();
@@ -150,6 +155,11 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/cancellation-refund" element={<CancellationRefund />} />
+            <Route path="/terms-conditions" element={<TermsConditions />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact-us" element={<ContactUs />} />
           </Routes>
         </main>
         <Footer />
