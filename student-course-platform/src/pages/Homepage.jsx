@@ -885,16 +885,16 @@ function Homepage() {
             {[
               {
                 quote: "This platform completely transformed my career trajectory. The interactive approach made complex concepts incredibly easy to understand and apply!",
-                name: "Alice Johnson",
-                role: "Senior Developer at Google",
-                avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face",
+                name: "Kalyani Sahu",
+                role: "Bed Student",
+                avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face",
                 rating: 5,
               },
               {
                 quote: "The quality of instruction and hands-on projects prepared me perfectly for real-world challenges. Best investment I've ever made!",
-                name: "Marcus Chen",
-                role: "Data Scientist at Tesla",
-                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
+                name: "Umasankar",
+                role: "10th Class Student",
+                avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face",
                 rating: 5,
               },
             ].map((testimonial, index) => (
