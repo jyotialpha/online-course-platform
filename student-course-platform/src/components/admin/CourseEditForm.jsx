@@ -530,6 +530,95 @@ function CourseEditForm() {
     });
   };
 
+  const handleBulkUpload = (subjectIndex, chapterIndex, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const parsedQuestions = parseTxtContent(content);
+      if (parsedQuestions.length > 0) {
+        setFormData(prev => {
+          const updatedSubjects = [...prev.subjects];
+          updatedSubjects[subjectIndex].chapters[chapterIndex].questions = parsedQuestions;
+          return { ...prev, subjects: updatedSubjects };
+        });
+        Swal.fire({
+          title: 'Success!',
+          text: `Uploaded ${parsedQuestions.length} questions from file.`,
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: 'No valid questions found in the file.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const parseTxtContent = (content) => {
+    const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+    const questions = [];
+    let i = 0;
+    while (i < lines.length) {
+      if (lines[i].startsWith('Question')) {
+        i++;
+        if (i >= lines.length) break;
+        const questionText = lines[i];
+        i++;
+        const options = [];
+        let correctIndex = -1;
+        for (let opt = 0; opt < 4; opt++) {
+          if (i >= lines.length) break;
+          const optionLine = lines[i];
+          if (optionLine.startsWith(String.fromCharCode(65 + opt) + '.')) {
+            const optionText = optionLine.substring(2).trim();
+            options.push(optionText);
+            i++;
+            if (i < lines.length && lines[i] === 'Correct') {
+              correctIndex = opt;
+              i++;
+            }
+          } else {
+            break;
+          }
+        }
+        let explanation = '';
+        if (i < lines.length && lines[i].startsWith('Explanation')) {
+          explanation = lines[i].substring(11).trim();
+          i++;
+        }
+        if (options.length === 4 && correctIndex !== -1) {
+          questions.push({
+            question: questionText,
+            questionImage: null,
+            options,
+            correctAnswer: correctIndex,
+            explanation
+          });
+        }
+      } else {
+        i++;
+      }
+    }
+    return questions;
+  };
+
+  const downloadSample = () => {
+    const sampleContent = `Question 1\n\nWhat is 2+2?\n\nA. 3\n\nB. 4\n\nCorrect\n\nC. 5\n\nD. 6\n\nExplanation: Basic math\n\nQuestion 2\n\nWhat is the capital of France?\n\nA. London\n\nB. Berlin\n\nC. Paris\n\nCorrect\n\nD. Rome\n\nExplanation: Paris is the capital of France.\n\nQuestion 3\n\nଭାରତର ରାଜଧାନୀ କ'ଣ?\n\nA. ମୁମ୍ବାଇ\n\nB. କୋଲକାତା\n\nC. ନୂଆଦିଲ୍ଲୀ\n\nCorrect\n\nD. ଚେନ୍ନାଇ\n\nExplanation: ନୂଆଦିଲ୍ଲୀ ଭାରତର ରାଜଧାନୀ ଅଟେ।\n\nQuestion 4\n\n୨ + ୩ = ?\n\nA. ୪\n\nB. ୫\n\nCorrect\n\nC. ୬\n\nD. ୭\n\nExplanation: ଦୁଇ ଯୋଗ ତିନି ସମାନ ପାଞ୍ଚ।`;
+    const blob = new Blob([sampleContent], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_questions_bilingual.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -1026,14 +1115,33 @@ function CourseEditForm() {
                             {/* Questions Section */}
                             <div className="mt-4 space-y-3">
                               <div className="flex justify-between items-center">
-                                <h5 className="text-xs font-medium text-gray-700">Questions</h5>
-                                <button
-                                  type="button"
-                                  onClick={() => addQuestion(subjectIndex, chapterIndex)}
-                                  className="inline-flex items-center px-2 py-0.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-                                >
-                                  <Plus className="h-3 w-3 mr-1" /> Add Question
-                                </button>
+                                <div>
+                                  <h5 className="text-xs font-medium text-gray-700">Mock Test Questions</h5>
+                                  <p className="text-xs text-gray-500 mt-1">Supports both English and Odia text</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => addQuestion(subjectIndex, chapterIndex)}
+                                    className="inline-flex items-center px-2 py-0.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" /> Add Question
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById(`bulk-upload-${subjectIndex}-${chapterIndex}`).click()}
+                                    className="inline-flex items-center px-2 py-0.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                                  >
+                                    <File className="h-3 w-3 mr-1" /> Bulk Upload
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={downloadSample}
+                                    className="inline-flex items-center px-2 py-0.5 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" /> Template
+                                  </button>
+                                </div>
                               </div>
 
                               {chapter.questions?.map((question, questionIndex) => {
@@ -1265,6 +1373,13 @@ function CourseEditForm() {
                                   </div>
                                 );
                               })}
+                              <input
+                                type="file"
+                                id={`bulk-upload-${subjectIndex}-${chapterIndex}`}
+                                accept=".txt"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleBulkUpload(subjectIndex, chapterIndex, e.target.files[0])}
+                              />
                             </div>
                           </div>
                         )}
