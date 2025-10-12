@@ -58,8 +58,14 @@ function Navbar() {
           >
             <Menu className="w-6 h-6" />
           </motion.button>
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            LearnPlatform
+         <Link to="/" className="flex items-center space-x-2">
+            <motion.img
+              src="/mockved.png"
+              alt="MockVed Logo"
+              className="h-16 w-auto object-contain drop-shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+            />
           </Link>
         </div>
         <div className="hidden md:flex space-x-6 items-center">
