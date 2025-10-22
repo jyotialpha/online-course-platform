@@ -16,7 +16,8 @@ import {
   Eye,
   Filter,
   SortAsc,
-  SortDesc
+  SortDesc,
+  Users
 } from 'lucide-react';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { API_BASE_URL } from '../config/api';
@@ -266,6 +267,13 @@ const AdminDashboardContent = () => {
       icon: <PlusCircle className="h-8 w-8 text-indigo-600" />,
       link: '/admin/create-course',
       buttonText: 'Create Course',
+    },
+    {
+      title: 'Student Details',
+      description: 'View and manage student information and enrollments',
+      icon: <Users className="h-8 w-8 text-indigo-600" />,
+      link: '/admin/students',
+      buttonText: 'View Students',
     },
     {
       title: 'Upload PDF',

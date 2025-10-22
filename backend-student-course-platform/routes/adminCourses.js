@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticateToken, restrictTo } = require('../middleware/auth');
 const courseController = require('../controllers/courseController');
+const studentController = require('../controllers/studentController');
 const Course = require('../models/Course');
 
 const router = express.Router();
@@ -57,6 +58,19 @@ router.delete('/courses/:courseId',
   authenticateToken, 
   restrictTo('admin'), 
   courseController.deleteCourse
+);
+
+// Student management routes
+router.get('/students', 
+  authenticateToken, 
+  restrictTo('admin'), 
+  studentController.getAllStudents
+);
+
+router.get('/students/:studentId', 
+  authenticateToken, 
+  restrictTo('admin'), 
+  studentController.getStudentById
 );
 
 module.exports = router;

@@ -19,6 +19,8 @@ import CourseEditForm from './components/admin/CourseEditForm';
 import CourseView from './components/admin/CourseView';
 import PDFUploadForm from './components/admin/PDFUploadForm';
 import MockTestForm from './components/admin/MockTestForm';
+import StudentDetails from './pages/admin/StudentDetails';
+import StudentDetailView from './pages/admin/StudentDetailView';
 import Login from './pages/Login';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import CancellationRefund from './pages/CancellationRefund';
@@ -153,6 +155,22 @@ function AppContent() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <MockTestForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/students" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <StudentDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/student/:studentId" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <StudentDetailView />
                 </ProtectedRoute>
               }
             />
